@@ -1,0 +1,73 @@
+﻿using AmongUs.Data;
+using Hazel;
+using InnerNet;
+using UnityEngine;
+
+namespace AmongUsRevamped;
+
+[HarmonyPatch(typeof(EndGameManager), nameof(EndGameManager.ShowButtons))]
+public static class EndGameManagerPatch
+{
+    public static void Postfix(EndGameManager __instance)
+    {
+        Logger.Info(" -------- GAME ENDED --------", "EndGame");
+        Utils.ClearLeftoverData();
+        
+        EndGameNavigation navigation = __instance.Navigation;
+        if (!AmongUsClient.Instance.AmHost || __instance == null || navigation == null || !Options.AutoRejoinLobby.GetBool()) return;
+        navigation.NextGame();
+    }
+}
+
+[HarmonyPatch(typeof(LogicGameFlowNormal), nameof(LogicGameFlowNormal.CheckEndCriteria))]
+class NormalGameEndChecker
+{
+    public static bool ImpCheckComplete;
+    public static string LastWinReason = "";
+    public static List<PlayerControl> imps = new List<PlayerControl>();
+
+    public static bool Prefix()
+    {
+
+        if (Options.NoGameEnd.GetBool() || Options.Gamemode.GetValue() == 3 || Utils.HandlingGameEnd) return false;
+
+        var allPlayers = PlayerControl.AllPlayerControls.ToArray();
+
+        if (!ImpCheckComplete)
+        {
+            imps.AddRange(allPlayers.Where(pc => pc.Data.Role.IsImpostor));
+            ImpCheckComplete = true;
+        }
+
+        var customRoles = CustomRoleManagement.PlayerToCustomRole();
+        var impostorList = string.Join(", ", imps.Select(p => p.Data.PlayerName));
+
+        if (Utils.AliveImpostors == 0) 
+        {
+            LastWinReason = $"Crewmates win!\n\nImpostors: {impostorList}" + (string.IsNullOrEmpty(customRoles) ? "" : "\n\n" + customRoles);
+        }
+        else if (Utils.AliveImpostors >= Utils.AliveCrewmates) 
+        {
+            LastWinReason = $"Impostors win!\n\nImpostor: {impostorList}" + (string.IsNullOrEmpty(customRoles) ? "" : "\n\n" + customRoles);
+        }
+        else if (GameData.Instance != null && GameData.Instance.TotalTasks > 0 && GameData.Instance.CompletedTasks >= GameData.Instance.TotalTasks)
+        {
+            LastWinReason = $"Crewmates win! (Tasks)\n\nImpostors: {impostorList}" + (string.IsNullOrEmpty(customRoles) ? "" : "\n\n" + customRoles);
+        }
+        else if (Options.Gamemode.GetValue() < 2)
+        {
+            LastWinReason = $"Impostors win! (Sabotage)\n\nImpostors: {impostorList}" + (string.IsNullOrEmpty(customRoles) ? "" : "\n\n" + customRoles);
+        }
+        return true;
+    }
+}
+
+[HarmonyPatch(typeof(LogicGameFlowHnS), nameof(LogicGameFlowHnS.CheckEndCriteria))]
+class HNSGameEndChecker
+{
+    public static bool Prefix()
+    {
+        if (Options.NoGameEnd.GetBool()) return false;
+        else return true;
+    }
+}
