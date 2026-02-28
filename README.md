@@ -31,7 +31,6 @@ The moderator system has been overhauled for easier management and clearer behav
 
 - **/moderator &lt;Color&gt;** (host only) → Toggle moderator status by player color (e.g. `/moderator Red`). Adds the player as moderator if they aren’t one, or removes them if they already are. Feedback appears **only in your local chat** (e.g. “PlayerName added as moderator” / “PlayerName removed from moderators”).
 - **Same commands as host** → Moderators can use the same chat commands as the host (kick/ban, /help, /lastgame, /0kc, /sns, /speedrun, /roles, etc.), **respecting System settings**: e.g. if “Who can use Color Commands” is set to *Nobody*, only the host can use `/color`; if *Moderators* or *Everyone*, moderators can use it too. “Moderators can use commands” must be enabled for moderator-only commands.
-- **No star in names** → Moderator names are shown normally (no ★Name★).
 - **Kick/ban accountability** → When a moderator kicks or bans someone via command, the host sees in the notifier who did it (e.g. “PlayerName (moderator) kicked TargetName”).
 - **Role pre-assignment** → Moderators can use **/role** and **/unrole** in the lobby; the action is applied with **no chat message**. They can see the current preassignments with **/roles** (the list is sent to them privately). The host still sees the list in chat when using **/roles**.
 
@@ -84,7 +83,7 @@ All moderator list changes are saved to `AUR-DATA/ModeratorList.txt` (one Friend
 (Full list from original – plus /role, /roles, /unrole, and **/moderator &lt;Color&gt;** for moderator management.)
 
 ## 📥 How to Install
-- **With BepInEx already installed**: Drop the `AUR.v2.1.0.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
+- **With BepInEx already installed**: Drop the `AUR.v2.1.5.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
 - **Clean install**: Download the latest .zip from Releases → Extract directly into your Among Us folder
 
 Check the original guide for exact folder locations (Steam, Epic, Itch, etc.).

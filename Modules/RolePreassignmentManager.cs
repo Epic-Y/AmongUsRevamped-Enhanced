@@ -36,12 +36,11 @@ public static class RolePreassignmentManager
         { "Viper", RoleTypes.Viper }
     };
 
-    /// <summary>Roles especiales de tripulante que pueden repartirse según la config (sin incluir Crewmate base).</summary>
+    /// <summary>Roles especiales de tripulante que pueden repartirse según la config (sin incluir Crewmate base ni GuardianAngel, que es solo de fantasma).</summary>
     private static readonly RoleTypes[] CrewmateSpecialRoles =
     {
         RoleTypes.Scientist,
         RoleTypes.Engineer,
-        RoleTypes.GuardianAngel,
         RoleTypes.Tracker,
         RoleTypes.Detective,
         RoleTypes.Noisemaker
@@ -148,6 +147,12 @@ public static class RolePreassignmentManager
         AssignedThisRun = new Dictionary<RoleTypes, int>();
         foreach (var role in CrewmateSpecialRoles)
             AssignedThisRun[role] = CountPreassignedSlotsForRole(role);
+        // Contar también preasignaciones de roles especiales de impostor (no el impostor base)
+        foreach (var role in ImpostorTeamRoles)
+        {
+            if (role == RoleTypes.Impostor) continue;
+            AssignedThisRun[role] = CountPreassignedSlotsForRole(role);
+        }
         int playerCount = GetLobbyPlayerCount();
         int maxImpostors = GetAdjustedNumImpostors(playerCount);
         int preassignedImpostors = CountPreassignedImpostorSlots();
@@ -243,6 +248,13 @@ public static class RolePreassignmentManager
             return false;
         }
 
+        // GuardianAngel solo debe obtenerse al morir; no se puede preasignar como rol inicial.
+        if (roleType == RoleTypes.GuardianAngel)
+        {
+            errorTag = "Guardian Angel cannot be preassigned; it is a ghost-only role gained after death.";
+            return false;
+        }
+
         var opts = Main.NormalOptions;
         if (opts == null)
         {
@@ -275,7 +287,8 @@ public static class RolePreassignmentManager
         }
 
         int maxForRole = roleOptions.GetNumPerGame(roleType);
-        if (maxForRole <= 0 && roleType != RoleTypes.Crewmate && !ImpostorTeamRoles.Contains(roleType))
+        // Todos los roles especiales (tripulantes e impostores) deben respetar que 0 = desactivado.
+        if (maxForRole <= 0 && roleType != RoleTypes.Crewmate && roleType != RoleTypes.Impostor)
         {
             errorTag = $"Role {roleName} is disabled in game options.";
             return false;
@@ -370,7 +383,8 @@ public static class RolePreassignmentManager
         if (role == RoleTypes.Crewmate || role == RoleTypes.Impostor) return false;
         int maxForRole = GetMaxForRole(role);
         if (maxForRole <= 0) return false;
-        return CountPreassignedSlotsForRole(role) >= maxForRole;
+        // Usar el total asignado en esta ronda (preasignados + dados aleatoriamente)
+        return GetAssignedCount(role) >= maxForRole;
     }
 
     /// <summary>Devuelve el rol que debe tener este jugador al iniciar (por ClientId). Preasignación tiene prioridad; si hay que reemplazar, se asigna un rol aleatorio según la config.</summary>
@@ -386,11 +400,36 @@ public static class RolePreassignmentManager
         if (Preassignments.TryGetValue(clientId, out var preassigned))
             return preassigned;
 
+        // No permitir que nadie empiece como GuardianAngel: si el juego lo asigna, convertirlo a otro rol de tripulante.
+        if (gameAssignedRole == RoleTypes.GuardianAngel)
+        {
+            RoleTypes pickedGa = PickRandomCrewmateRole();
+            RecordRoleAssigned(pickedGa);
+            return pickedGa;
+        }
+
         bool isImpostorRole = ImpostorTeamRoles.Contains(gameAssignedRole);
         if (HasAnyImpostorPreassignment() && isImpostorRole)
         {
             if (_allowedNonPreassignedImpostors < _remainingImpostorSlots)
             {
+                // Hay huecos de impostor, pero debemos respetar el cupo de roles especiales (Shapeshifter, Viper, Phantom, etc.).
+                if (IsRoleFilledByPreassignments(gameAssignedRole))
+                {
+                    // Si el rol especial está lleno, intentar degradar a impostor base si hay hueco.
+                    if (gameAssignedRole != RoleTypes.Impostor && !IsRoleFilledByPreassignments(RoleTypes.Impostor))
+                    {
+                        _allowedNonPreassignedImpostors++;
+                        RecordRoleAssigned(RoleTypes.Impostor);
+                        return RoleTypes.Impostor;
+                    }
+
+                    // Si tampoco hay hueco para más impostores, convertir a tripulante.
+                    RoleTypes pickedCrew = PickRandomCrewmateRole();
+                    RecordRoleAssigned(pickedCrew);
+                    return pickedCrew;
+                }
+
                 _allowedNonPreassignedImpostors++;
                 RecordRoleAssigned(gameAssignedRole);
                 return gameAssignedRole;
