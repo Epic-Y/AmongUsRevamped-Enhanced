@@ -36,6 +36,13 @@ The moderator system has been overhauled for easier management and clearer behav
 
 All moderator list changes are saved to `AUR-DATA/ModeratorList.txt` (one Friend Code per line).
 
+### ⭐ New Gamemode: 4 Impostors (v2.1.8)
+Adds a simple but chaotic mode with **4 impostors**.
+
+- **Fixed impostor count** → The game forces the impostor count to 4.
+- **Compatible with role pre-assignment** → The mode works together with the pre-assignment system: you can still pre-assign impostor and crewmate roles and the game will respect those slots.
+- **Do not touch other options while active** → While the **4 Impostors** gamemode is enabled, **do not change other game options** (roles, counts, etc.) in the lobby. Changing extra options while this mode is active cause the game **kick you back to the menu**.
+
 ## 🎮 Full Feature List (Original + Enhancements)
 ### Client-Side Tweaks
 - Game Master mode
@@ -83,7 +90,7 @@ All moderator list changes are saved to `AUR-DATA/ModeratorList.txt` (one Friend
 (Full list from original – plus /role, /roles, /unrole, and **/moderator &lt;Color&gt;** for moderator management.)
 
 ## 📥 How to Install
-- **With BepInEx already installed**: Drop the `AUR.v2.1.5.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
+- **With BepInEx already installed**: Drop the `AUR.v2.1.8.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
 - **Clean install**: Download the latest .zip from Releases → Extract directly into your Among Us folder
 
 Check the original guide for exact folder locations (Steam, Epic, Itch, etc.).

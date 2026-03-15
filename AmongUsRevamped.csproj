@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
+<<<<<<< HEAD
         <AssemblyName>AUR.v2.1.5</AssemblyName>
+=======
+        <AssemblyName>AUR.v2.1.8</AssemblyName>
+>>>>>>> 9d5fda6 (Updated version and kick and ban commands now are visible in the chat)
         <TargetFramework Condition="'$(Configuration)' == 'Android'">net8.0</TargetFramework>
         <TargetFramework Condition="'$(Configuration)' != 'Android'">net6.0</TargetFramework>
         <LangVersion>latest</LangVersion>
