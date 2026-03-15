@@ -81,6 +81,19 @@ class FixedUpdateInGamePatch
             }
         }
 
+        // 4 Impostors
+        if (Options.Gamemode.GetValue() == 4 && !Utils.isHideNSeek)
+        {
+            int playerCount = GameData.Instance != null ? GameData.Instance.PlayerCount : 0;
+            if (playerCount == 0)
+            {
+                foreach (var p in PlayerControl.AllPlayerControls)
+                    if (p != null && p.Data != null && p.PlayerId < 254) playerCount++;
+            }
+            int numImps = playerCount >= 2 ? Math.Min(4, Math.Max(1, playerCount - 1)) : 1;
+            Main.NormalOptions.NumImpostors = numImps;
+        }
+
         if (Options.Gamemode.GetValue() == 0 && Main.NormalOptions.KillCooldown <= 0.01f)
         {
             Main.NormalOptions.KillCooldown = 25f;

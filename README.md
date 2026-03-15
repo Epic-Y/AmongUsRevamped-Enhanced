@@ -83,7 +83,11 @@ All moderator list changes are saved to `AUR-DATA/ModeratorList.txt` (one Friend
 (Full list from original – plus /role, /roles, /unrole, and **/moderator &lt;Color&gt;** for moderator management.)
 
 ## 📥 How to Install
+<<<<<<< HEAD
 - **With BepInEx already installed**: Drop the `AUR.v2.1.5.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
+=======
+- **With BepInEx already installed**: Drop the `AUR.v2.1.8.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
+>>>>>>> 9d5fda6 (Updated version and kick and ban commands now are visible in the chat)
 - **Clean install**: Download the latest .zip from Releases → Extract directly into your Among Us folder
 
 Check the original guide for exact folder locations (Steam, Epic, Itch, etc.).

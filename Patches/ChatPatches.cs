@@ -330,6 +330,10 @@ internal static class SendChatPatch
                 Utils.ChatCommand(__instance, Translator.Get("speedrunMode", Options.GameAutoEndsAfter.GetInt()), "", false);
                 break;
 
+                case 4:
+                Utils.ChatCommand(__instance, "4 Impostors:\n\nThere are always 4 impostors in the game (or fewer if there are fewer than 5 players).", "", false);
+                break;
+
             }
             __instance.timeSinceLastMessage = 0.8f;
             __instance.freeChatField.textArea.Clear();
@@ -407,9 +411,10 @@ internal static class SendChatPatch
             {
                 AmongUsClient.Instance.KickPlayer(target.Data.ClientId, isBan || isColorBan);
                 Logger.Info($" {(banLog ? "banned" : "kicked")} {target.Data.PlayerName}", "Kick&BanCommand");
-                __instance.freeChatField.textArea.Clear();
-                __instance.freeChatField.textArea.SetText(string.Empty);
+                PlayerControl.LocalPlayer.RpcSendChat(msgtext);
             }
+            __instance.freeChatField.textArea.Clear();
+            __instance.freeChatField.textArea.SetText(string.Empty);
             return false;
         }
     }
@@ -625,6 +630,10 @@ public static class RPCHandlerPatch
 
                         case 3:
                         Utils.ModeratorChatCommand(Translator.Get("speedrunMode", Options.GameAutoEndsAfter.GetInt()), "", false);
+                        break;
+
+                        case 4:
+                        Utils.ModeratorChatCommand("4 Impostors:\n\nThere are always 4 impostors in the game (or fewer if there are fewer than 5 players).", "", false);
                         break;
 
                     }

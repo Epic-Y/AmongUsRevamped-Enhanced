@@ -1,4 +1,4 @@
-﻿using System.Threading.Tasks;
+using System.Threading.Tasks;
 using UnityEngine;
 
 // https://github.com/tukasa0001/TownOfHost/blob/main/Modules/OptionHolder.cs
@@ -54,7 +54,7 @@ namespace AmongUsRevamped
 
         public static readonly string[] gameModes =
         {
-            "None", "0 Kill Cooldown", "Shift And Seek", "Speedrun"
+            "None", "0 Kill Cooldown", "Shift And Seek", "Speedrun", "4 Impostors"
         };
 
         public static readonly string[] colorLevels =
