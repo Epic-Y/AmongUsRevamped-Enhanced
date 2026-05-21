@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "AmongUsRevamped": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "AmongUs": "D:\\Programas Pro\\Steam\\steamapps\\common\\Among Us"
+      }
+    }
+  }
+}

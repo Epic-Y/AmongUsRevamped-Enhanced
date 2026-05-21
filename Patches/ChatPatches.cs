@@ -280,33 +280,51 @@ internal static class SendChatPatch
                 Logger.SendInGame("Use /role only in lobby.");
                 return false;
             }
+
             string args = msgtext.Substring(6).Trim();
-            int firstSpace = args.IndexOf(' ');
-            if (firstSpace <= 0)
+            int lastSpace = args.LastIndexOf(' ');
+            if (lastSpace <= 0)
             {
-                Logger.SendInGame("Usage: /role ColorName RoleName (e.g. /role Red Impostor)");
+                Logger.SendInGame("Usage: /role NameOrColor Role (ej: /role Red Impostor o /role Mi Nombre Impostor)");
                 return false;
             }
-            string colorStr = args.Substring(0, firstSpace).Trim();
-            string roleStr = args.Substring(firstSpace + 1).Trim();
+
+            string nameOrColor = args.Substring(0, lastSpace).Trim();
+            string roleStr = args.Substring(lastSpace + 1).Trim();
+
             if (string.IsNullOrEmpty(roleStr))
             {
-                Logger.SendInGame("Usage: /role ColorName RoleName (e.g. /role Red Impostor)");
+                Logger.SendInGame("Usage: /role NameOrColor Role");
                 return false;
             }
-            if (!Utils.TryGetColorId(colorStr.ToLower(), out byte colorId))
+
+            bool success;
+            string err = "";
+
+            if (Utils.TryGetColorId(nameOrColor.ToLower(), out byte colorId))
             {
-                Logger.SendInGame($"Invalid color (use English name): {colorStr}");
-                return false;
+                success = RolePreassignmentManager.TrySet(colorId, roleStr, out err);
             }
-            if (!RolePreassignmentManager.TrySet(colorId, roleStr, out string err))
+            else
+            {
+                success = RolePreassignmentManager.TrySetByPlayerName(nameOrColor, roleStr, out err);
+            }
+
+            if (!success)
             {
                 Logger.SendInGame(err);
                 return false;
             }
-            var names = RolePreassignmentManager.GetPlayerNamesWithColor(colorId);
-            string namesStr = names.Count > 0 ? string.Join(", ", names) : colorStr;
-            HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, $"Preassigned {namesStr} → {roleStr}");
+
+            // Mensaje mejorado con nombre real del jugador
+            string displayName = nameOrColor;
+            if (Utils.TryGetColorId(nameOrColor.ToLower(), out byte colId))
+            {
+                var realNames = RolePreassignmentManager.GetPlayerNamesWithColor(colId);
+                if (realNames.Count > 0) displayName = string.Join(", ", realNames);
+            }
+
+            HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, $"Preassigned {displayName} → {roleStr}");
             return false;
         }
 
@@ -550,20 +568,30 @@ public static class RPCHandlerPatch
                             RolePreassignmentManager.RemoveByPlayerName(nameArg, out _);
                         break;
                     }
-                    if (text.StartsWith("/role "))
-                    {
-                        string args = msgtext.Substring(6).Trim();
-                        int firstSpace = args.IndexOf(' ');
-                        if (firstSpace > 0)
+                        if (text.StartsWith("/role "))
                         {
-                            string colorStr = args.Substring(0, firstSpace).Trim();
-                            string roleStr = args.Substring(firstSpace + 1).Trim();
-                            if (!string.IsNullOrEmpty(roleStr) && Utils.TryGetColorId(colorStr, out byte colorId))
-                                RolePreassignmentManager.TrySet(colorId, roleStr, out _);
+                            string args = msgtext.Substring(6).Trim();
+                            int lastSpace = args.LastIndexOf(' ');
+                            if (lastSpace > 0)
+                            {
+                                string nameOrColor = args.Substring(0, lastSpace).Trim();
+                                string roleStr = args.Substring(lastSpace + 1).Trim();
+
+                                if (!string.IsNullOrEmpty(roleStr))
+                                {
+                                    if (Utils.TryGetColorId(nameOrColor, out byte colorId))
+                                    {
+                                        RolePreassignmentManager.TrySet(colorId, roleStr, out _);
+                                    }
+                                    else
+                                    {
+                                        RolePreassignmentManager.TrySetByPlayerName(nameOrColor, roleStr, out _);
+                                    }
+                                }
+                            }
+                            break;
                         }
-                        break;
                     }
-                }
 
                 if (CustomRoleManagement.HandlingRoleMessages || OnGameJoinedPatch.WaitingForChat) return;
 

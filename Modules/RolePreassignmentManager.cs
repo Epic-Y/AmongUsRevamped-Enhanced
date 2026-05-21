@@ -449,4 +449,84 @@ public static class RolePreassignmentManager
         RecordRoleAssigned(gameAssignedRole);
         return gameAssignedRole;
     }
+
+    /// <summary>Permite preasignar rol usando el NOMBRE del jugador (más preciso que por color).</summary>
+    public static bool TrySetByPlayerName(string playerName, string roleNameInput, out string errorTag)
+    {
+        errorTag = null;
+
+        if (string.IsNullOrWhiteSpace(playerName) || string.IsNullOrWhiteSpace(roleNameInput))
+        {
+            errorTag = "Usage: /role PlayerName RoleName";
+            return false;
+        }
+
+        string searchName = playerName.Trim();
+        PlayerControl target = null;
+
+        // 1. Coincidencia exacta primero
+        foreach (var p in PlayerControl.AllPlayerControls)
+        {
+            if (p?.Data == null || p.PlayerId >= 254) continue;
+            if (p.Data.PlayerName.Equals(searchName, StringComparison.OrdinalIgnoreCase))
+            {
+                target = p;
+                break;
+            }
+        }
+
+        // 2. Si no encontró, busca "contiene"
+        if (target == null && searchName.Length >= 2)
+        {
+            foreach (var p in PlayerControl.AllPlayerControls)
+            {
+                if (p?.Data == null || p.PlayerId >= 254) continue;
+                string currentName = p.Data.PlayerName ?? "";
+                if (currentName.IndexOf(searchName, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    target = p;
+                    break;
+                }
+            }
+        }
+
+        if (target == null)
+        {
+            errorTag = $"No player found with name \"{playerName}\".";
+            return false;
+        }
+
+        // === CAMBIO CLAVE ===
+        int clientId = target.Data.ClientId;
+        return TrySetByClientId(clientId, roleNameInput, out errorTag);
+    }
+
+    /// <summary>Asigna rol solo a un jugador específico (por ClientId). No afecta a otros del mismo color.</summary>
+    public static bool TrySetByClientId(int clientId, string roleNameInput, out string errorTag)
+    {
+        errorTag = null;
+
+        if (string.IsNullOrWhiteSpace(roleNameInput))
+        {
+            errorTag = "Role name required.";
+            return false;
+        }
+
+        var roleName = roleNameInput.Trim();
+        if (!RoleNameToType.TryGetValue(roleName, out var roleType))
+        {
+            errorTag = $"Unknown role: {roleName}. Use: {string.Join(", ", RoleNameToType.Keys)}.";
+            return false;
+        }
+
+        if (roleType == RoleTypes.GuardianAngel)
+        {
+            errorTag = "Guardian Angel cannot be preassigned.";
+            return false;
+        }
+
+        // Asignamos directamente solo a este jugador
+        Preassignments[clientId] = roleType;
+        return true;
+    }
 }

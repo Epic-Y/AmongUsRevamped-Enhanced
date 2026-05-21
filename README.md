@@ -14,9 +14,9 @@ This is an **independent modification** of the original AmongUsRevamped, focused
 ### ⭐ Brand New: Role Pre-Assignment System (v2.0.0)
 Take full control of role distribution before the game starts!
 
-- **/role <Color> <RoleName>** → Pre-assign a specific role to a player by their color (e.g., `/role Red Shapeshifter`).
+- **/role** → Pre-assign a specific role to a player by their color (e.g., `/role Blue Shapeshifter`).
 - **/roles** → List all current pre-assignments (shows player names/colors and their assigned roles – local view only).
-- **/unrole <PlayerName>** → Remove pre-assignment for a specific player.
+- **/unrole** → Remove pre-assignment for a specific player.
 - **/unrole** (no args) → Clear **all** pre-assignments at once.
 
 **Smart & Balanced Behavior:**
@@ -42,6 +42,14 @@ Adds a simple but chaotic mode with **4 impostors**.
 - **Fixed impostor count** → The game forces the impostor count to 4.
 - **Compatible with role pre-assignment** → The mode works together with the pre-assignment system: you can still pre-assign impostor and crewmate roles and the game will respect those slots.
 - **Do not touch other options while active** → While the **4 Impostors** gamemode is enabled, **do not change other game options** (roles, counts, etc.) in the lobby. Changing extra options while this mode is active cause the game **kick you back to the menu**.
+
+### ⭐ Updated Role Pre-Assignment System (2.1.9)
+The `/role` command has been significantly improved:
+
+- **By color** Assigns the role to all players with that color.
+- **By name**: Assigns the role **only** to that specific player (even if they share color with others).
+- Supports names with spaces and partial matches.
+- Works for both **Host** and **Moderators**.
 
 ## 🎮 Full Feature List (Original + Enhancements)
 ### Client-Side Tweaks
@@ -75,6 +83,7 @@ Adds a simple but chaotic mode with **4 impostors**.
 - 0 Kill Cooldown
 - Shift and Seek
 - Speedrun
+- 4 impostors (new in v2.1.8)
 
 ### Extra Polish
 - ehT dlekS (reverse Skeld map)
@@ -90,7 +99,7 @@ Adds a simple but chaotic mode with **4 impostors**.
 (Full list from original – plus /role, /roles, /unrole, and **/moderator &lt;Color&gt;** for moderator management.)
 
 ## 📥 How to Install
-- **With BepInEx already installed**: Drop the `AUR.v2.1.8.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
+- **With BepInEx already installed**: Drop the `AUR.v2.1.9.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
 - **Clean install**: Download the latest .zip from Releases → Extract directly into your Among Us folder
 
 Check the original guide for exact folder locations (Steam, Epic, Itch, etc.).
