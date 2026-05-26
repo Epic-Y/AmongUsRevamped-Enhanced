@@ -1,9 +1,10 @@
 using Hazel;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using InnerNet;
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 namespace AmongUsRevamped;
 
@@ -358,31 +359,111 @@ internal static class SendChatPatch
             __instance.freeChatField.textArea.SetText(string.Empty);
             return false;
         }
-        
+
         bool col1 = text.StartsWith("/col ") || text.StartsWith("/cor ");
-        bool col2  = text.StartsWith("/color ");
+        bool col2 = text.StartsWith("/color ");
         bool col3 = text.StartsWith("/colour ");
 
         if (col1 || col2 || col3)
         {
-            string argCol = text.Substring(col1 ? 5 : col2 ? 7 : col3 ? 8 : 0).Trim();
+            string argCol = text.Substring(col1 ? 5 : col2 ? 7 : col3 ? 8 : 0).Trim().ToLower();
+
+            if (argCol == "rainbow")
+            {
+                if (Utils.CanUseColorCommand(PlayerControl.LocalPlayer))
+                {
+                    Main.RainbowActive = true;
+                    Main.LastRainbowColor = (byte)PlayerControl.LocalPlayer.Data.DefaultOutfit.ColorId;
+                    Utils.DoRainbowCycle();
+                }
+                PlayerControl.LocalPlayer.RpcSendChat(msgtext);
+                __instance.freeChatField.textArea.Clear();
+                __instance.freeChatField.textArea.SetText(string.Empty);
+                return false;
+            }
 
             if (Utils.TryGetColorId(argCol, out byte colId) && Utils.CanUseColorCommand(PlayerControl.LocalPlayer))
             {
+                if (Main.RainbowActive) Main.RainbowActive = false;
+
                 if (colId > 17 && !Options.AllowFortegreen.GetBool()) { }
                 else
                 {
                     PlayerControl.LocalPlayer.RpcSetColor(colId);
-                    __instance.freeChatField.textArea.Clear();
-                    __instance.freeChatField.textArea.SetText(string.Empty);
                 }
             }
-
+            PlayerControl.LocalPlayer.RpcSendChat(msgtext);
+            __instance.freeChatField.textArea.Clear();
+            __instance.freeChatField.textArea.SetText(string.Empty);
             return false;
         }
 
         else
         {
+            if (text.StartsWith("/eject "))
+            {
+                if (!Utils.InGame || !Utils.IsMeeting)
+                {
+                    Logger.SendInGame("You can only use /eject during a meeting.");
+                    __instance.freeChatField.textArea.Clear();
+                    __instance.freeChatField.textArea.SetText(string.Empty);
+                    return false;
+                }
+
+                if (!Utils.CanUseEjectAndSkipCommand(PlayerControl.LocalPlayer))
+                {
+                    Logger.SendInGame("You don't have permission to use /eject.");
+                    __instance.freeChatField.textArea.Clear();
+                    __instance.freeChatField.textArea.SetText(string.Empty);
+                    return false;
+                }
+
+                string ejectArg = msgtext.Substring(7).Trim();
+                PlayerControl ejectTarget = Utils.GetPlayerByColorOrName(ejectArg);
+
+                if (ejectTarget == null)
+                {
+                    __instance.freeChatField.textArea.Clear();
+                    __instance.freeChatField.textArea.SetText(string.Empty);
+                    return false;
+                }
+
+                MeetingHud.Instance.RpcVotingComplete(
+                    new Il2CppStructArray<MeetingHud.VoterState>(0),
+                    ejectTarget.Data,
+                    true
+                );
+
+                PlayerControl.LocalPlayer.RpcSendChat(msgtext);
+                __instance.freeChatField.textArea.Clear();
+                __instance.freeChatField.textArea.SetText(string.Empty);
+                return false;
+            }
+
+            if (text == "/skip")
+            {
+                if (!Utils.InGame || !Utils.IsMeeting)
+                {
+                    Logger.SendInGame("You can only use /skip during a meeting.");
+                    __instance.freeChatField.textArea.Clear();
+                    __instance.freeChatField.textArea.SetText(string.Empty);
+                    return false;
+                }
+
+                if (!Utils.CanUseEjectAndSkipCommand(PlayerControl.LocalPlayer))
+                {
+                    Logger.SendInGame("You don't have permission to use /skip.");
+                    __instance.freeChatField.textArea.Clear();
+                    __instance.freeChatField.textArea.SetText(string.Empty);
+                    return false;
+                }
+
+                MeetingHud.Instance.RpcClose();
+                PlayerControl.LocalPlayer.RpcSendChat(msgtext);
+                __instance.freeChatField.textArea.Clear();
+                __instance.freeChatField.textArea.SetText(string.Empty);
+                return false;
+            }
 
             bool isKick = text.StartsWith("/kick ");
             bool isBan  = text.StartsWith("/ban ");
@@ -491,19 +572,56 @@ public static class RPCHandlerPatch
                 bool col2  = text.StartsWith("/color ");
                 bool col3 = text.StartsWith("/colour ");
 
-                if ((col1 || col2 || col3) && !Utils.InGame)
-                {
-                    string argCol = text.Substring(col1 ? 5 : col2 ? 7 : col3 ? 8 : 0).Trim();
-
-                    if (Utils.TryGetColorId(argCol, out byte colId) && Utils.CanUseColorCommand(__instance))
+                    if ((col1 || col2 || col3))
                     {
-                        if (colId <= 17 || Options.AllowFortegreen.GetBool())
-                            __instance.RpcSetColor(colId);
-                    }
-                }
+                        string argCol = text.Substring(col1 ? 5 : col2 ? 7 : col3 ? 8 : 0).Trim().ToLower();
 
-                // Banning works by name and color. Commands are separated incase someone has a color as their name
-                bool isKick = text.StartsWith("/kick ");
+                        if (argCol == "rainbow")
+                        {
+                            if (Utils.CanUseColorCommand(__instance))
+                            {
+                                Main.RainbowActive = true;
+                                Main.LastRainbowColor = (byte)__instance.Data.DefaultOutfit.ColorId;
+                                Utils.DoRainbowCycle();
+                            }
+                            return;
+                        }
+
+                        if (Utils.TryGetColorId(argCol, out byte colId) && Utils.CanUseColorCommand(__instance))
+                        {
+                            if (Main.RainbowActive) Main.RainbowActive = false;
+
+                            if (colId <= 17 || Options.AllowFortegreen.GetBool())
+                                __instance.RpcSetColor(colId);
+                        }
+                        return;
+                    }
+
+                    // ==================== /eject y /skip para jugadores normales ====================
+                    if (text.StartsWith("/eject "))
+                    {
+                        if (!Utils.InGame || !Utils.IsMeeting) return;
+                        if (!Utils.CanUseEjectAndSkipCommand(__instance)) return;
+
+                        string ejectArg = msgtext.Substring(7).Trim();
+                        PlayerControl ejectTarget = Utils.GetPlayerByColorOrName(ejectArg);
+
+                        if (ejectTarget == null) return;
+
+                        MeetingHud.Instance.RpcVotingComplete(new Il2CppStructArray<MeetingHud.VoterState>(0), ejectTarget.Data, true);
+                        return;
+                    }
+
+                    if (text == "/skip")
+                    {
+                        if (!Utils.InGame || !Utils.IsMeeting) return;
+                        if (!Utils.CanUseEjectAndSkipCommand(__instance)) return;
+
+                        MeetingHud.Instance.RpcClose();
+                        return;
+                    }
+
+                    bool isKick = text.StartsWith("/kick ");
                 bool isBan  = text.StartsWith("/ban ");
 
                 bool isColorKick = text.StartsWith("/ckick ");

@@ -42,7 +42,7 @@ public partial class Main : BasePlugin
 
     public static bool HasArgumentException;
     public static string CredentialsText;
-    public const string ModVersion = "2.1.8";
+    public const string ModVersion = "2.2.0";
 
     public static float GameTimer;
 
@@ -129,6 +129,9 @@ public partial class Main : BasePlugin
         Coral = 17,
         Fortegreen = 18
     }
+
+    public static bool RainbowActive = false;
+    public static byte LastRainbowColor = 255;
 
     // Innersloth now censors messages with more than 5 numbers. Sucks to be them.
     public static readonly char[] CircledDigits =

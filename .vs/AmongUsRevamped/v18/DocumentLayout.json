@@ -7,8 +7,24 @@
       "RelativeMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|solutionrelative:patches\\chatpatches.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|d:\\descargas\\amongusrevamped-enhanced\\modules\\rolepreassignmentmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|solutionrelative:modules\\rolepreassignmentmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|d:\\descargas\\amongusrevamped-enhanced\\amongusrevamped.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|solutionrelative:amongusrevamped.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|d:\\descargas\\amongusrevamped-enhanced\\modules\\utils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|solutionrelative:modules\\utils.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|d:\\descargas\\amongusrevamped-enhanced\\amongusrevamped.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|solutionrelative:amongusrevamped.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|d:\\descargas\\amongusrevamped-enhanced\\modules\\customoptionsholder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|solutionrelative:modules\\customoptionsholder.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|d:\\descargas\\amongusrevamped-enhanced\\patches\\credentialspatch.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2D120100-3FA2-4BBF-42A3-7C2079CEDF1E}|AmongUsRevamped.csproj|solutionrelative:patches\\credentialspatch.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,8 +34,73 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 5,
           "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "CredentialsPatch.cs",
+              "DocumentMoniker": "D:\\Descargas\\AmongUsRevamped-Enhanced\\Patches\\CredentialsPatch.cs",
+              "RelativeDocumentMoniker": "Patches\\CredentialsPatch.cs",
+              "ToolTip": "D:\\Descargas\\AmongUsRevamped-Enhanced\\Patches\\CredentialsPatch.cs",
+              "RelativeToolTip": "Patches\\CredentialsPatch.cs",
+              "ViewState": "AgIAALIAAAAAAAAAAAAQwMAAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T13:06:57.088Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "CustomOptionsHolder.cs",
+              "DocumentMoniker": "D:\\Descargas\\AmongUsRevamped-Enhanced\\Modules\\CustomOptionsHolder.cs",
+              "RelativeDocumentMoniker": "Modules\\CustomOptionsHolder.cs",
+              "ToolTip": "D:\\Descargas\\AmongUsRevamped-Enhanced\\Modules\\CustomOptionsHolder.cs",
+              "RelativeToolTip": "Modules\\CustomOptionsHolder.cs",
+              "ViewState": "AgIAAD0BAAAAAAAAAAAQwFgBAAC/AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-26T12:40:27.975Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "AmongUsRevamped.csproj",
+              "DocumentMoniker": "D:\\Descargas\\AmongUsRevamped-Enhanced\\AmongUsRevamped.csproj",
+              "RelativeDocumentMoniker": "AmongUsRevamped.csproj",
+              "ToolTip": "D:\\Descargas\\AmongUsRevamped-Enhanced\\AmongUsRevamped.csproj",
+              "RelativeToolTip": "AmongUsRevamped.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-05-26T12:08:26.941Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Utils.cs",
+              "DocumentMoniker": "D:\\Descargas\\AmongUsRevamped-Enhanced\\Modules\\Utils.cs",
+              "RelativeDocumentMoniker": "Modules\\Utils.cs",
+              "ToolTip": "D:\\Descargas\\AmongUsRevamped-Enhanced\\Modules\\Utils.cs",
+              "RelativeToolTip": "Modules\\Utils.cs",
+              "ViewState": "AgIAADcAAAAAAAAAAAA2wG0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-25T22:02:59.232Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "AmongUsRevamped.cs",
+              "DocumentMoniker": "D:\\Descargas\\AmongUsRevamped-Enhanced\\AmongUsRevamped.cs",
+              "RelativeDocumentMoniker": "AmongUsRevamped.cs",
+              "ToolTip": "D:\\Descargas\\AmongUsRevamped-Enhanced\\AmongUsRevamped.cs",
+              "RelativeToolTip": "AmongUsRevamped.cs",
+              "ViewState": "AgIAACAAAAAAAAAAAAA8wCwAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-05-25T22:02:16.108Z",
+              "EditorCaption": ""
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -28,22 +109,9 @@
               "RelativeDocumentMoniker": "Patches\\ChatPatches.cs",
               "ToolTip": "D:\\Descargas\\AmongUsRevamped-Enhanced\\Patches\\ChatPatches.cs",
               "RelativeToolTip": "Patches\\ChatPatches.cs",
-              "ViewState": "AgIAACIBAAAAAAAAAAAAAD4BAAA7AAAAAAAAAA==",
+              "ViewState": "AgIAAFQCAAAAAAAAAAAAAHICAAA+AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-05-21T20:18:25.316Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "RolePreassignmentManager.cs",
-              "DocumentMoniker": "D:\\Descargas\\AmongUsRevamped-Enhanced\\Modules\\RolePreassignmentManager.cs",
-              "RelativeDocumentMoniker": "Modules\\RolePreassignmentManager.cs",
-              "ToolTip": "D:\\Descargas\\AmongUsRevamped-Enhanced\\Modules\\RolePreassignmentManager.cs",
-              "RelativeToolTip": "Modules\\RolePreassignmentManager.cs",
-              "ViewState": "AgIAACkBAAAAAAAAAAAowAoCAAAJAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-05-21T20:18:22.265Z",
               "EditorCaption": ""
             }
           ]

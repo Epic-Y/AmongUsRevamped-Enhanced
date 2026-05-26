@@ -178,8 +178,6 @@ namespace AmongUsRevamped
     public static class MainMenuManagerStartPatch
     {
         private static PassiveButton template;
-        private static PassiveButton discordButton;
-        private static PassiveButton gitHubButton;
         private static Transform buttonParent;
         public static void Postfix(MainMenuManager __instance)
         {
@@ -188,29 +186,6 @@ namespace AmongUsRevamped
             if (template == null) return;
 
             if (buttonParent == null) buttonParent = template.transform.parent;
-            if (discordButton == null)
-            {
-                discordButton = CreateButton(
-                    __instance,
-                    "DiscordButton",
-                    new(2.1f, 4.05f, 1f),
-                    new(88, 101, 242, byte.MaxValue),
-                    new(148, 161, byte.MaxValue, byte.MaxValue),
-                    () => Application.OpenURL("https://discord.gg/83Zhzhyhya"),
-                    "Discord");
-            }
-
-            if (gitHubButton == null)
-            {
-                gitHubButton = CreateButton(
-                    __instance,
-                    "GitHubButton",
-                    new(3.8f, 4.05f, 1f),
-                    new(153, 153, 153, byte.MaxValue),
-                    new(209, 209, 209, byte.MaxValue),
-                    () => Application.OpenURL("https://github.com/ApeMV/AmongUsRevamped"),
-                    "GitHub");
-            }
 
             var bg = GameObject.Find("BackgroundTexture");
             if (bg != null)
