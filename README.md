@@ -1,17 +1,17 @@
-# AmongUsRevamped Enhanced – Role Pre-Assignment Edition! 🚀
+# AmongUsRevamped Enhanced🚀
 
 <p align="center">
   <a href="https://github.com/YOUR_USERNAME/AmongUsRevamped-Enhanced/releases/latest" target="_blank">
     <img src="https://img.shields.io/badge/Download%20Latest-Release-blue?style=for-the-badge&logo=github&logoColor=white"/>
   </a>
   <br><br>
-  <i>A powerful host-only enhancement for Among Us – now with full <b>role pre-assignment</b> for ultimate lobby control!</i>
+  <i>A powerful host-only enhancement for Among Us!</i>
 </p>
 
 ## 🔥 What's New in This Enhanced Version?
 This is an **independent modification** of the original AmongUsRevamped, focused on adding advanced **role pre-assignment** features while keeping everything else smooth and compatible.
 
-### ⭐ Brand New: Role Pre-Assignment System (v2.0.0)
+### ⭐ New: Role Pre-Assignment System (v2.0.0)
 Take full control of role distribution before the game starts!
 
 - **/role** → Pre-assign a specific role to a player by their color (e.g., `/role Blue Shapeshifter`).
@@ -50,6 +50,22 @@ The `/role` command has been significantly improved:
 - **By name**: Assigns the role **only** to that specific player (even if they share color with others).
 - Supports names with spaces and partial matches.
 - Works for both **Host** and **Moderators**.
+
+### ⭐ Major Update: Color System Overhaul + New Commands (v2.2.0)
+
+**New Color: Rainbow**
+- Added a brand new color called **"rainbow"**.
+- Use it with `/color rainbow`.
+
+**Improved `/color` Command**
+- `/color` now works **during the game** for non-host players depending on the permission setting.
+
+**New Commands**
+- **`/eject [Name or Color]`** — Smart player detection (color → exact name → partial name). Ejects the specified player.
+- **`/skip`** — Instantly skips the current meeting.
+
+**New Setting**
+- `Eject & Skip Commands` — Controls who can use `/eject` and `/skip` (Host Only / Host + Moderators / Everyone).
 
 ## 🎮 Full Feature List (Original + Enhancements)
 ### Client-Side Tweaks
@@ -99,7 +115,7 @@ The `/role` command has been significantly improved:
 (Full list from original – plus /role, /roles, /unrole, and **/moderator &lt;Color&gt;** for moderator management.)
 
 ## 📥 How to Install
-- **With BepInEx already installed**: Drop the `AUR.v2.1.9.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
+- **With BepInEx already installed**: Drop the `AUR.v2.2.0.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
 - **Clean install**: Download the latest .zip from Releases → Extract directly into your Among Us folder
 
 Check the original guide for exact folder locations (Steam, Epic, Itch, etc.).

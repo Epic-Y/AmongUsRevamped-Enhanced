@@ -63,6 +63,60 @@ public static class Utils
         return level == 0 && IsPlayerModerator(player.Data.FriendCode); // Moderators
     }
 
+    public static bool CanUseEjectAndSkipCommand(PlayerControl player)
+    {
+        if (player?.Data == null) return false;
+        if (AmongUsClient.Instance.AmHost && player.Data.ClientId == AmongUsClient.Instance.ClientId) return true;
+
+        int level = Options.EjectAndSkipCommandLevel.GetValue();
+        if (level == 2) return true;
+        if (level == 1) return IsPlayerModerator(player.Data.FriendCode);
+        return false;
+    }
+
+    public static PlayerControl GetPlayerByColorOrName(string arg)
+    {
+        if (string.IsNullOrEmpty(arg)) return null;
+        arg = arg.ToLower().Trim();
+
+        if (TryGetColorId(arg, out byte colorId))
+        {
+            List<PlayerControl> playersWithColor = new List<PlayerControl>();
+            foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+            {
+                if (p?.Data != null && p.Data.DefaultOutfit.ColorId == colorId)
+                    playersWithColor.Add(p);
+            }
+
+            if (playersWithColor.Count == 0)
+            {
+                Logger.SendInGame("No player has that color.");
+                return null;
+            }
+            if (playersWithColor.Count > 1)
+            {
+                Logger.SendInGame("Multiple players have that color. Please use their exact name.");
+                return null;
+            }
+            return playersWithColor[0];
+        }
+
+        foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+        {
+            if (p?.Data != null && p.Data.PlayerName.Equals(arg, StringComparison.OrdinalIgnoreCase))
+                return p;
+        }
+
+        foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+        {
+            if (p?.Data != null && p.Data.PlayerName.ToLower().Contains(arg))
+                return p;
+        }
+
+        Logger.SendInGame("Player not found.");
+        return null;
+    }
+
     /// <summary>True if this player can use moderator-only commands (help, lastgame, 0kc, sns, speedrun, roles): host or (moderator + ModeratorCanUseCommand).</summary>
     public static bool CanUseModeratorCommands(PlayerControl player)
     {
@@ -530,5 +584,45 @@ public static class Utils
             Logger.Error($"Failed to read Texture： {path}", "LoadTextureFromResources");
         }
         return null;
+    }
+
+    // ==================== NUEVO: Modo Rainbow para /color rainbow ====================
+    public static void DoRainbowCycle(byte playerId)
+    {
+        if (!Main.RainbowPlayers.Contains(playerId)) return;
+
+        // Buscar al jugador de forma segura
+        PlayerControl player = null;
+        foreach (var p in PlayerControl.AllPlayerControls)
+        {
+            if (p?.Data?.PlayerId == playerId)
+            {
+                player = p;
+                break;
+            }
+        }
+
+        if (player == null)
+        {
+            Main.RainbowPlayers.Remove(playerId);
+            return;
+        }
+
+        int maxColor = Options.AllowFortegreen.GetBool() ? 19 : 18;
+
+        byte currentColor = (byte)player.Data.DefaultOutfit.ColorId;
+        int randomValue = UnityEngine.Random.Range(0, maxColor);
+        byte newColor = (byte)randomValue;
+
+        // Evitar repetir el mismo color
+        while (newColor == currentColor && maxColor > 1)
+        {
+            randomValue = UnityEngine.Random.Range(0, maxColor);
+            newColor = (byte)randomValue;
+        }
+
+        player.RpcSetColor(newColor);
+
+        _ = new LateTask(() => DoRainbowCycle(playerId), 0.5f, $"Rainbow_{playerId}");
     }
 }
