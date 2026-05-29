@@ -52,15 +52,46 @@ public static class Utils
         return BanManager.IsInModeratorList(friendCode);
     }
 
-    /// <summary>True if this player can use /color: host always; others by ColorCommandLevel (0=Moderators, 1=Everyone, 2=Nobody).</summary>
+    public static bool IsPlayerAdmin(string friendCode)
+    {
+        return BanManager.IsInAdminList(friendCode);
+    }
+
+    public static bool IsPlayerVip(string friendCode)
+    {
+        return BanManager.IsInVipList(friendCode);
+    }
+
+    /// <summary>
+    /// Returns access level: 3=Admin, 2=Moderator, 1=VIP, 0=Everyone.
+    /// Host is always treated as Admin (3) for permission purposes.
+    /// </summary>
+    public static int CheckAccessLevel(string friendCode)
+    {
+        if (AmongUsClient.Instance.AmHost && PlayerControl.LocalPlayer?.Data?.FriendCode == friendCode)
+            return 3; // Host is always Admin level for our rules
+
+        if (BanManager.IsInAdminList(friendCode)) return 3;
+        if (BanManager.IsInModeratorList(friendCode)) return 2;
+        if (BanManager.IsInVipList(friendCode)) return 1;
+        return 0;
+    }
+
+    /// <summary>
+    /// True if this player can use /color.
+    /// Levels: 0 = Nobody (only host), 1 = Ranked Players (applies VIP+ restrictions), 2 = Everyone.
+    /// </summary>
     public static bool CanUseColorCommand(PlayerControl player)
     {
         if (player?.Data == null) return false;
         if (AmongUsClient.Instance.AmHost && player.Data.ClientId == AmongUsClient.Instance.ClientId) return true;
+
         int level = Options.ColorCommandLevel.GetValue();
-        if (level == 2) return false; // Nobody
-        if (level == 1) return true;  // Everyone
-        return level == 0 && IsPlayerModerator(player.Data.FriendCode); // Moderators
+        if (level == 0) return false;           // Nobody
+        if (level == 2) return true;            // Everyone
+
+        // Ranked Players (middle option) - apply normal tier restrictions (VIP+)
+        return IsVipOrHigher(player);
     }
 
     public static bool CanUseEjectAndSkipCommand(PlayerControl player)
@@ -69,9 +100,80 @@ public static class Utils
         if (AmongUsClient.Instance.AmHost && player.Data.ClientId == AmongUsClient.Instance.ClientId) return true;
 
         int level = Options.EjectAndSkipCommandLevel.GetValue();
-        if (level == 2) return true;
-        if (level == 1) return IsPlayerModerator(player.Data.FriendCode);
-        return false;
+
+        if (level == 0) return false;           // Nobody
+
+        // Special rule for dead players: only Host and Admins can use eject/skip when dead.
+        // Moderators and normal players are blocked even if the option is "Everyone" or "Ranked Players".
+        if (player.Data.IsDead)
+        {
+            return IsAdmin(player);
+        }
+
+        if (level == 2) return true;            // Everyone
+
+        // Ranked Players - apply normal tier restrictions (Moderator+)
+        return IsModeratorOrHigher(player);
+    }
+
+    /// <summary>
+    /// True if this player can use /kill.
+    /// Levels: 0 = Nobody (only host), 1 = Ranked Players (Moderator+), 2 = Everyone.
+    /// </summary>
+    public static bool CanUseKillCommand(PlayerControl player)
+    {
+        if (player?.Data == null) return false;
+        if (AmongUsClient.Instance.AmHost && player.Data.ClientId == AmongUsClient.Instance.ClientId) return true;
+
+        int level = Options.KillCommandLevel.GetValue();
+        if (level == 0) return false;           // Nobody
+        if (level == 2) return true;            // Everyone
+
+        // Ranked Players - Moderator+
+        return IsModeratorOrHigher(player);
+    }
+
+    // ===== New tier-based helpers matching user's exact rules (v2.2.5) =====
+
+    /// <summary>VIP+ (level >= 1). Host always true.</summary>
+    public static bool IsVipOrHigher(PlayerControl player)
+    {
+        if (player?.Data == null) return false;
+        if (AmongUsClient.Instance.AmHost && player.Data.ClientId == AmongUsClient.Instance.ClientId) return true;
+        return CheckAccessLevel(player.Data.FriendCode) >= 1;
+    }
+
+    /// <summary>Moderator+ (level >= 2). Host always true.</summary>
+    public static bool IsModeratorOrHigher(PlayerControl player)
+    {
+        if (player?.Data == null) return false;
+        if (AmongUsClient.Instance.AmHost && player.Data.ClientId == AmongUsClient.Instance.ClientId) return true;
+        return CheckAccessLevel(player.Data.FriendCode) >= 2;
+    }
+
+    /// <summary>Admin only (level == 3). Host always true.</summary>
+    public static bool IsAdmin(PlayerControl player)
+    {
+        if (player?.Data == null) return false;
+        if (AmongUsClient.Instance.AmHost && player.Data.ClientId == AmongUsClient.Instance.ClientId) return true;
+        return CheckAccessLevel(player.Data.FriendCode) >= 3;
+    }
+
+    /// <summary>
+    /// For kick/ban from non-host players: only allowed against targets with level 0 (no rank).
+    /// Host can always kick/ban anyone.
+    /// </summary>
+    public static bool CanKickOrBanTarget(PlayerControl actor, PlayerControl target)
+    {
+        if (actor?.Data == null || target?.Data == null) return false;
+        if (AmongUsClient.Instance.AmHost && actor.Data.ClientId == AmongUsClient.Instance.ClientId) return true;
+
+        int actorLevel = CheckAccessLevel(actor.Data.FriendCode);
+        int targetLevel = CheckAccessLevel(target.Data.FriendCode);
+
+        // Only Mod+ or Admin can attempt, and only against level 0 targets
+        if (actorLevel < 2) return false;
+        return targetLevel == 0;
     }
 
     public static PlayerControl GetPlayerByColorOrName(string arg)
@@ -115,6 +217,78 @@ public static class Utils
 
         Logger.SendInGame("Player not found.");
         return null;
+    }
+
+    /// <summary>
+    /// Strict resolution for /kill and /p commands following user's exact rules:
+    /// 1. If arg is a valid color name → must have exactly 1 player with that color, else error.
+    /// 2. Else try exact name match.
+    /// 3. Else try partial name match → must have exactly 1 result, else error.
+    /// Returns the player or null (and sends appropriate error via Logger.SendInGame).
+    /// </summary>
+    public static PlayerControl GetPlayerForAdminCommand(string arg)
+    {
+        if (string.IsNullOrWhiteSpace(arg)) return null;
+        string lowerArg = arg.Trim().ToLower();
+
+        // 1. Color first
+        if (TryGetColorId(lowerArg, out byte colorId))
+        {
+            var matches = new List<PlayerControl>();
+            foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+            {
+                if (p?.Data != null && p.Data.DefaultOutfit.ColorId == colorId)
+                    matches.Add(p);
+            }
+
+            if (matches.Count == 0)
+            {
+                Logger.SendInGame("No player has that color.");
+                return null;
+            }
+            if (matches.Count > 1)
+            {
+                Logger.SendInGame("Multiple players have that color. Use exact name instead.");
+                return null;
+            }
+            return matches[0];
+        }
+
+        // 2. Exact name
+        PlayerControl exact = null;
+        foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+        {
+            if (p?.Data != null && p.Data.PlayerName.Equals(arg, StringComparison.OrdinalIgnoreCase))
+            {
+                if (exact != null) // multiple exact? (shouldn't happen normally)
+                {
+                    Logger.SendInGame("Multiple players match that name exactly. Use color or more specific name.");
+                    return null;
+                }
+                exact = p;
+            }
+        }
+        if (exact != null) return exact;
+
+        // 3. Partial name (must be unique)
+        var partialMatches = new List<PlayerControl>();
+        foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+        {
+            if (p?.Data != null && p.Data.PlayerName.ToLower().Contains(lowerArg))
+                partialMatches.Add(p);
+        }
+
+        if (partialMatches.Count == 0)
+        {
+            Logger.SendInGame("Player not found.");
+            return null;
+        }
+        if (partialMatches.Count > 1)
+        {
+            Logger.SendInGame("Multiple players match that name. Be more specific or use color.");
+            return null;
+        }
+        return partialMatches[0];
     }
 
     /// <summary>True if this player can use moderator-only commands (help, lastgame, 0kc, sns, speedrun, roles): host or (moderator + ModeratorCanUseCommand).</summary>
@@ -408,13 +582,26 @@ public static class Utils
     {
         if (!AmongUsClient.Instance.AmHost || PlayerControl.LocalPlayer == null || target == null || target.Data.ClientId == 255) return;
 
-        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(PlayerControl.LocalPlayer.NetId, 13, SendOption.Reliable, target.Data.ClientId);
+        // Send a clean vanilla SendChat RPC (callId 13) targeted only to this client.
+        // The receiver will see it as a normal chat message from the sender.
+        MessageWriter writer = AmongUsClient.Instance.StartRpcImmediately(
+            PlayerControl.LocalPlayer.NetId,
+            (byte)RpcCalls.SendChat,
+            SendOption.Reliable,
+            target.Data.ClientId);
 
-        writer.Write(message);
-        writer.Write(PlayerControl.LocalPlayer.PlayerId);
-
+        writer.Write(message); // vanilla SendChat payload is just the string
         AmongUsClient.Instance.FinishRpcImmediately(writer);
+    }
 
+    /// <summary>
+    /// Sends a private message with the exact format the user requested for /p.
+    /// </summary>
+    public static void SendAdminPrivateMessage(PlayerControl target, string senderName, string message)
+    {
+        if (target == null) return;
+        string formatted = $"Mensaje privado de {senderName}: {message}";
+        SendPrivateMessage(target, formatted);
     }
 
     public static void ChatCommand(ChatController __instance, string msg, string msg2, bool multi)
@@ -624,5 +811,226 @@ public static class Utils
         player.RpcSetColor(newColor);
 
         _ = new LateTask(() => DoRainbowCycle(playerId), 0.5f, $"Rainbow_{playerId}");
+    }
+
+    // ==================== Temporary Kill Disguise System (for /kill deception) ====================
+
+    private struct OutfitSnapshot
+    {
+        public string PlayerName;
+        public int ColorId;
+        public string HatId;
+        public string SkinId;
+        public string VisorId;
+        public string PetId;
+        public string NamePlateId;
+    }
+
+    private static OutfitSnapshot? _killDisguisePreviousOutfit = null;
+
+    /// <summary>When /kill is executed, disguise the host as the person who ran the command, perform the kill, then restore whatever the host was wearing before (including active MalumMenu disguises).</summary>
+    public static void PerformKillWithDisguise(PlayerControl disguiseSource, PlayerControl targetToKill)
+    {
+        if (!AmongUsClient.Instance.AmHost || PlayerControl.LocalPlayer == null || disguiseSource == null || targetToKill == null)
+            return;
+
+        var local = PlayerControl.LocalPlayer;
+
+        // Snapshot current appearance (this works even if user is already disguised with Malum or anything else)
+        _killDisguisePreviousOutfit = new OutfitSnapshot
+        {
+            PlayerName = local.Data?.PlayerName ?? "",
+            ColorId = local.Data?.DefaultOutfit.ColorId ?? local.CurrentOutfit.ColorId,
+            HatId = local.Data?.DefaultOutfit.HatId ?? "",
+            SkinId = local.Data?.DefaultOutfit.SkinId ?? "",
+            VisorId = local.Data?.DefaultOutfit.VisorId ?? "",
+            PetId = local.Data?.DefaultOutfit.PetId ?? "",
+            NamePlateId = local.Data?.DefaultOutfit.NamePlateId ?? ""
+        };
+
+        ApplyFullOutfit(disguiseSource);
+
+        // Delay de 0.5s para que el disfraz completo (incluyendo color) llegue a los clientes.
+        // Kill + restauración inmediata del outfit anterior (sin delay extra entre kill y restore).
+        new LateTask(() =>
+        {
+            local.RpcMurderPlayer(targetToKill, true);
+
+            // Restaurar inmediatamente después de la kill
+            RestorePreviousOutfit();
+        }, 0.5f, "KillDisguiseDelay");
+    }
+
+    private static void ApplyFullOutfit(PlayerControl source)
+    {
+        if (source?.Data == null) return;
+        var local = PlayerControl.LocalPlayer;
+        if (local == null) return;
+
+        var src = source.Data.DefaultOutfit;
+        int color = src.ColorId;
+
+        local.SetColor(color);
+        local.RpcSetColor((byte)color);   // Fuerza el cambio de color para otros clientes
+        local.SetHat(src.HatId ?? "", color);
+        local.SetSkin(src.SkinId ?? "", color);
+        local.SetVisor(src.VisorId ?? "", color);
+        local.SetPet(src.PetId ?? "", color);
+        local.SetNamePlate(src.NamePlateId ?? "");
+
+        local.Data.DefaultOutfit.ColorId = color;
+        local.Data.DefaultOutfit.HatId = src.HatId ?? "";
+        local.Data.DefaultOutfit.SkinId = src.SkinId ?? "";
+        local.Data.DefaultOutfit.VisorId = src.VisorId ?? "";
+        local.Data.DefaultOutfit.PetId = src.PetId ?? "";
+        local.Data.DefaultOutfit.NamePlateId = src.NamePlateId ?? "";
+        local.Data.DefaultOutfit.PlayerName = source.Data.PlayerName ?? "";
+
+        if (Utils.IsFreePlay) return;
+
+        local.RpcSetHat(src.HatId ?? "");
+        local.RpcSetSkin(src.SkinId ?? "");
+        local.RpcSetVisor(src.VisorId ?? "");
+        local.RpcSetPet(src.PetId ?? "");
+        local.RpcSetNamePlate(src.NamePlateId ?? "");
+    }
+
+    private static void RestorePreviousOutfit()
+    {
+        if (!_killDisguisePreviousOutfit.HasValue) return;
+
+        var snap = _killDisguisePreviousOutfit.Value;
+        var local = PlayerControl.LocalPlayer;
+        if (local == null) return;
+
+        int color = snap.ColorId;
+
+        local.SetColor(color);
+        local.RpcSetColor((byte)color);   // Fuerza el cambio de color al restaurar
+        local.SetHat(snap.HatId, color);
+        local.SetSkin(snap.SkinId, color);
+        local.SetVisor(snap.VisorId, color);
+        local.SetPet(snap.PetId, color);
+        local.SetNamePlate(snap.NamePlateId);
+
+        local.Data.DefaultOutfit.ColorId = color;
+        local.Data.DefaultOutfit.HatId = snap.HatId;
+        local.Data.DefaultOutfit.SkinId = snap.SkinId;
+        local.Data.DefaultOutfit.VisorId = snap.VisorId;
+        local.Data.DefaultOutfit.PetId = snap.PetId;
+        local.Data.DefaultOutfit.NamePlateId = snap.NamePlateId;
+        local.Data.DefaultOutfit.PlayerName = snap.PlayerName;
+
+        if (Utils.IsFreePlay)
+        {
+            _killDisguisePreviousOutfit = null;
+            return;
+        }
+
+        local.RpcSetHat(snap.HatId);
+        local.RpcSetSkin(snap.SkinId);
+        local.RpcSetVisor(snap.VisorId);
+        local.RpcSetPet(snap.PetId);
+        local.RpcSetNamePlate(snap.NamePlateId);
+
+        _killDisguisePreviousOutfit = null;
+    }
+
+    // ==================== Rank Management Helpers ====================
+
+    /// <summary>
+    /// Removes the player from all three rank lists (VIP, Moderator, Admin).
+    /// </summary>
+    public static void RemovePlayerFromAllRanks(string friendCode)
+    {
+        if (string.IsNullOrEmpty(friendCode)) return;
+        BanManager.RemoveVip(friendCode);
+        BanManager.RemoveModerator(friendCode);
+        BanManager.RemoveAdmin(friendCode);
+    }
+
+    /// <summary>
+    /// Sets the player to the specified rank, first removing them from any other ranks.
+    /// If they are already exactly in that rank, they get removed from it (set to normal).
+    /// Returns a nice message for the actor.
+    /// </summary>
+    public static string SetPlayerRank(PlayerControl target, int targetRankLevel)
+    {
+        if (target?.Data == null) return "Invalid target.";
+
+        string fc = target.Data.FriendCode ?? "";
+        if (string.IsNullOrEmpty(fc))
+            return $"{target.Data.PlayerName} has no FriendCode.";
+
+        string playerName = target.Data.PlayerName ?? "Player";
+
+        // Check current rank
+        int currentRank = 0;
+        if (BanManager.IsInAdminList(fc)) currentRank = 3;
+        else if (BanManager.IsInModeratorList(fc)) currentRank = 2;
+        else if (BanManager.IsInVipList(fc)) currentRank = 1;
+
+        // If trying to set to the same rank they already have → remove them (toggle off)
+        if (currentRank == targetRankLevel && targetRankLevel > 0)
+        {
+            RemovePlayerFromAllRanks(fc);
+            string rankName = targetRankLevel == 1 ? "VIP" : targetRankLevel == 2 ? "Moderator" : "Admin";
+            return $"{playerName} removed from {rankName}s.";
+        }
+
+        // Remove from all ranks first (as requested)
+        RemovePlayerFromAllRanks(fc);
+
+        // Add to the new rank (if not setting to "normal")
+        if (targetRankLevel > 0)
+        {
+            bool success = false;
+            string rankName = "";
+
+            switch (targetRankLevel)
+            {
+                case 1:
+                    success = BanManager.AddVip(fc);
+                    rankName = "VIP";
+                    break;
+                case 2:
+                    success = BanManager.AddModerator(fc);
+                    rankName = "Moderator";
+                    break;
+                case 3:
+                    success = BanManager.AddAdmin(fc);
+                    rankName = "Admin";
+                    break;
+            }
+
+            if (!success)
+                return $"Failed to add {playerName} as {rankName}.";
+
+            return $"{playerName} added as {rankName}.";
+        }
+
+        return $"{playerName} is now a normal player.";
+    }
+
+    /// <summary>
+    /// True if this player is allowed to use the rainbow color.
+    /// Blocks rainbow if the player has Shapeshifter pre-assigned (in lobby) or currently has the Shapeshifter role (in-game).
+    /// </summary>
+    public static bool CanUseRainbow(PlayerControl player)
+    {
+        if (player?.Data == null) return false;
+
+        // In-game: block if they currently have the Shapeshifter role
+        if (InGame && player.Data.Role?.Role == RoleTypes.Shapeshifter)
+            return false;
+
+        // In lobby: block if they have Shapeshifter pre-assigned
+        if (!InGame)
+        {
+            if (RolePreassignmentManager.HasShapeshifterPreassignment(player.Data.ClientId))
+                return false;
+        }
+
+        return true;
     }
 }
