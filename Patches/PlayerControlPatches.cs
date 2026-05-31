@@ -101,6 +101,7 @@ internal static class CheckShapeshiftPatch
             Logger.SendInGame($" {__instance.Data.PlayerName} shapeshifted during misfire cooldown, making the game temporarily freeze them.");
             return false;
         }
-        else return true;
+
+        return true;
     }
 }

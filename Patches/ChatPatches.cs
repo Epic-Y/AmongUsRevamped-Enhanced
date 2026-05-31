@@ -108,55 +108,86 @@ internal static class SendChatPatch
             return false;
         }
 
-        if (text.StartsWith("/moderator ") && text.Length > 11)
+        // ==================== /vip (Moderators + Admins) ====================
+        if (text.StartsWith("/vip "))
         {
-            string colorArg = msgtext.Substring(11).Trim();
             __instance.freeChatField.textArea.Clear();
             __instance.freeChatField.textArea.SetText(string.Empty);
-            if (!Utils.TryGetColorId(colorArg, out byte colorId))
+
+            if (!Utils.IsModeratorOrHigher(PlayerControl.LocalPlayer))
             {
-                HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, "Moderator: Invalid color (use English name, e.g. Red, Blue).");
                 return false;
             }
-            PlayerControl target = null;
-            foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+
+            // Same strict detection as /kill: color first (must be unique), then exact name, then unique partial name
+            string vipArg = msgtext.Substring(5).Trim();
+            PlayerControl vipTarget = Utils.GetPlayerForAdminCommand(vipArg);
+            if (vipTarget == null) return false;
+
+            string result = Utils.SetPlayerRank(vipTarget, 1);
+            HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, result);
+
+            // When the host uses the command, broadcast it publicly and respect chat cooldown
+            if (AmongUsClient.Instance.AmHost)
             {
-                if (p?.Data == null || p.PlayerId == 255) continue;
-                if (p.Data.DefaultOutfit.ColorId == colorId) { target = p; break; }
+                PlayerControl.LocalPlayer.RpcSendChat(msgtext);
+                __instance.timeSinceLastMessage = 3f;
             }
-            if (target == null)
+            return false;
+        }
+
+        // ==================== /moderator (Admins only) ====================
+        if (text.StartsWith("/moderator "))
+        {
+            __instance.freeChatField.textArea.Clear();
+            __instance.freeChatField.textArea.SetText(string.Empty);
+
+            if (!Utils.IsAdmin(PlayerControl.LocalPlayer))
             {
-                HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, "Moderator: No player with that color in the lobby.");
                 return false;
             }
-            string fc = target.Data.FriendCode ?? "";
-            if (string.IsNullOrEmpty(fc))
+
+            // Same strict detection as /kill: color first (must be unique), then exact name, then unique partial name
+            string modArg = msgtext.Substring(11).Trim();
+            PlayerControl modTarget = Utils.GetPlayerForAdminCommand(modArg);
+            if (modTarget == null) return false;
+
+            string result = Utils.SetPlayerRank(modTarget, 2);
+            HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, result);
+
+            // When the host uses the command, broadcast it publicly and respect chat cooldown
+            if (AmongUsClient.Instance.AmHost)
             {
-                HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, "Moderator: That player has no FriendCode.");
+                PlayerControl.LocalPlayer.RpcSendChat(msgtext);
+                __instance.timeSinceLastMessage = 3f;
+            }
+            return false;
+        }
+
+        // ==================== /admin (Host only) ====================
+        if (text.StartsWith("/admin "))
+        {
+            __instance.freeChatField.textArea.Clear();
+            __instance.freeChatField.textArea.SetText(string.Empty);
+
+            if (!AmongUsClient.Instance.AmHost)
+            {
                 return false;
             }
-            string name = target.Data.PlayerName ?? "Player";
-            if (BanManager.IsInModeratorList(fc))
+
+            // Same strict detection as /kill: color first (must be unique), then exact name, then unique partial name
+            string adminArg = msgtext.Substring(7).Trim();
+            PlayerControl adminTarget = Utils.GetPlayerForAdminCommand(adminArg);
+            if (adminTarget == null) return false;
+
+            string result = Utils.SetPlayerRank(adminTarget, 3);
+            HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, result);
+
+            // When the host uses the command, broadcast it publicly and respect chat cooldown
+            if (AmongUsClient.Instance.AmHost)
             {
-                if (BanManager.RemoveModerator(fc))
-                {
-                    HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, $"{name} removed from moderators");
-                }
-                else
-                {
-                    HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, "Moderator: Could not remove from list.");
-                }
-            }
-            else
-            {
-                if (BanManager.AddModerator(fc))
-                {
-                    HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, $"{name} added as moderator");
-                }
-                else
-                {
-                    HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, "Moderator: Could not add to list.");
-                }
+                PlayerControl.LocalPlayer.RpcSendChat(msgtext);
+                __instance.timeSinceLastMessage = 3f;
             }
             return false;
         }
@@ -242,6 +273,10 @@ internal static class SendChatPatch
                 Logger.SendInGame("Use /unrole only in lobby.");
                 return false;
             }
+            if (!Utils.IsModeratorOrHigher(PlayerControl.LocalPlayer))
+            {
+                return false;
+            }
             int count = RolePreassignmentManager.HasAny ? RolePreassignmentManager.GetPreassignmentsCount() : 0;
             RolePreassignmentManager.Clear();
             HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, count > 0 ? $"All preassignments removed ({count})." : "No preassignments to remove.");
@@ -255,6 +290,10 @@ internal static class SendChatPatch
             if (Utils.InGame)
             {
                 Logger.SendInGame("Use /unrole only in lobby.");
+                return false;
+            }
+            if (!Utils.IsModeratorOrHigher(PlayerControl.LocalPlayer))
+            {
                 return false;
             }
             string nameArg = msgtext.Substring(8).Trim();
@@ -279,6 +318,10 @@ internal static class SendChatPatch
             if (Utils.InGame)
             {
                 Logger.SendInGame("Use /role only in lobby.");
+                return false;
+            }
+            if (!Utils.IsVipOrHigher(PlayerControl.LocalPlayer))
+            {
                 return false;
             }
 
@@ -313,7 +356,6 @@ internal static class SendChatPatch
 
             if (!success)
             {
-                Logger.SendInGame(err);
                 return false;
             }
 
@@ -326,6 +368,80 @@ internal static class SendChatPatch
             }
 
             HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, $"Preassigned {displayName} → {roleStr}");
+            return false;
+        }
+
+        // ==================== /kill (Moderators + Admins) ====================
+        if (text.StartsWith("/kill "))
+        {
+            __instance.freeChatField.textArea.Clear();
+            __instance.freeChatField.textArea.SetText(string.Empty);
+
+            if (!Utils.InGame)
+            {
+                return false;
+            }
+
+            if (!Utils.CanUseKillCommand(PlayerControl.LocalPlayer))
+            {
+                return false;
+            }
+
+            string killArg = msgtext.Substring(6).Trim();
+            PlayerControl killTarget = Utils.GetPlayerForAdminCommand(killArg);
+
+            if (killTarget == null) return false;
+
+            // Use disguised kill so victim sees the correct person (even if host is executing)
+            Utils.PerformKillWithDisguise(PlayerControl.LocalPlayer, killTarget);
+
+            // When the host uses /kill, broadcast the command to public chat and respect cooldown
+            PlayerControl.LocalPlayer.RpcSendChat(msgtext);
+            __instance.timeSinceLastMessage = 3f;
+            return false;
+        }
+
+        // ==================== /p (Private messages - HOST ONLY) ====================
+        if (text.StartsWith("/p "))
+        {
+            __instance.freeChatField.textArea.Clear();
+            __instance.freeChatField.textArea.SetText(string.Empty);
+
+            // Strictly host only. Non-hosts (even admins with the mod) cannot use /p
+            // because vanilla players can detect the command being sent.
+            if (!AmongUsClient.Instance.AmHost)
+            {
+                return false;
+            }
+
+            string rest = msgtext.Substring(3).Trim();
+            int firstSpace = rest.IndexOf(' ');
+            if (firstSpace <= 0)
+            {
+                Logger.SendInGame("Usage: /p [Color or Name] Your private message here");
+                return false;
+            }
+
+            string targetArg = rest.Substring(0, firstSpace).Trim();
+            string privateMessage = rest.Substring(firstSpace + 1).Trim();
+
+            if (string.IsNullOrEmpty(privateMessage))
+            {
+                Logger.SendInGame("Message cannot be empty.");
+                return false;
+            }
+
+            PlayerControl pmTarget = Utils.GetPlayerForAdminCommand(targetArg);
+            if (pmTarget == null) return false;
+
+            if (pmTarget == PlayerControl.LocalPlayer)
+            {
+                Logger.SendInGame("You cannot send a private message to yourself.");
+                return false;
+            }
+
+            Utils.SendAdminPrivateMessage(pmTarget, PlayerControl.LocalPlayer.Data.PlayerName ?? "Host", privateMessage);
+            HudManager.Instance.Chat.AddChat(PlayerControl.LocalPlayer, $"Private message sent to {pmTarget.Data.PlayerName}.");
             return false;
         }
 
@@ -378,6 +494,20 @@ internal static class SendChatPatch
                 }
                 else
                 {
+                    if (!Utils.CanUseColorCommand(PlayerControl.LocalPlayer))
+                    {
+                        __instance.freeChatField.textArea.Clear();
+                        __instance.freeChatField.textArea.SetText(string.Empty);
+                        return false;
+                    }
+
+                    if (!Utils.CanUseRainbow(PlayerControl.LocalPlayer))
+                    {
+                        __instance.freeChatField.textArea.Clear();
+                        __instance.freeChatField.textArea.SetText(string.Empty);
+                        return false;
+                    }
+
                     Main.RainbowPlayers.Add(playerId);
                     Utils.DoRainbowCycle(playerId);
                 }
@@ -389,14 +519,17 @@ internal static class SendChatPatch
                 return false;
             }
 
-            if (Utils.TryGetColorId(argCol, out byte colId) && Utils.CanUseColorCommand(PlayerControl.LocalPlayer))
+            if (Utils.TryGetColorId(argCol, out byte colId))
             {
-                Main.RainbowPlayers.Remove(PlayerControl.LocalPlayer.Data.PlayerId);
-
-                if (colId > 17 && !Options.AllowFortegreen.GetBool()) { }
-                else
+                if (Utils.CanUseColorCommand(PlayerControl.LocalPlayer))
                 {
-                    PlayerControl.LocalPlayer.RpcSetColor(colId);
+                    Main.RainbowPlayers.Remove(PlayerControl.LocalPlayer.Data.PlayerId);
+
+                    if (colId > 17 && !Options.AllowFortegreen.GetBool()) { }
+                    else
+                    {
+                        PlayerControl.LocalPlayer.RpcSetColor(colId);
+                    }
                 }
             }
             PlayerControl.LocalPlayer.RpcSendChat(msgtext);
@@ -420,7 +553,6 @@ internal static class SendChatPatch
 
                 if (!Utils.CanUseEjectAndSkipCommand(PlayerControl.LocalPlayer))
                 {
-                    Logger.SendInGame("You don't have permission to use /eject.");
                     __instance.freeChatField.textArea.Clear();
                     __instance.freeChatField.textArea.SetText(string.Empty);
                     return false;
@@ -461,7 +593,6 @@ internal static class SendChatPatch
 
                 if (!Utils.CanUseEjectAndSkipCommand(PlayerControl.LocalPlayer))
                 {
-                    Logger.SendInGame("You don't have permission to use /skip.");
                     __instance.freeChatField.textArea.Clear();
                     __instance.freeChatField.textArea.SetText(string.Empty);
                     return false;
@@ -597,18 +728,31 @@ public static class RPCHandlerPatch
                             }
                             else
                             {
+                                if (!Utils.CanUseColorCommand(__instance))
+                                {
+                                    return; // silently block for remote players
+                                }
+
+                                if (!Utils.CanUseRainbow(__instance))
+                                {
+                                    return; // silently block for remote players
+                                }
+
                                 Main.RainbowPlayers.Add(playerId);
                                 Utils.DoRainbowCycle(playerId);
                             }
                             return;
                         }
 
-                        if (Utils.TryGetColorId(argCol, out byte colId) && Utils.CanUseColorCommand(__instance))
+                        if (Utils.TryGetColorId(argCol, out byte colId))
                         {
-                            Main.RainbowPlayers.Remove(__instance.Data.PlayerId);
+                            if (Utils.CanUseColorCommand(__instance))
+                            {
+                                Main.RainbowPlayers.Remove(__instance.Data.PlayerId);
 
-                            if (colId <= 17 || Options.AllowFortegreen.GetBool())
-                                __instance.RpcSetColor(colId);
+                                if (colId <= 17 || Options.AllowFortegreen.GetBool())
+                                    __instance.RpcSetColor(colId);
+                            }
                         }
                         return;
                     }
@@ -637,6 +781,54 @@ public static class RPCHandlerPatch
                         return;
                     }
 
+                    // /kill remote (Mod+ / Admin) - MUST be executed by the HOST, not the remote player
+                    if (text.StartsWith("/kill "))
+                    {
+                        if (!Utils.InGame) return;
+                        if (!Utils.CanUseKillCommand(__instance)) return;
+
+                        string killArg = msgtext.Substring(6).Trim();
+                        PlayerControl killTarget = Utils.GetPlayerForAdminCommand(killArg);
+                        if (killTarget == null) return;
+
+                        // Host performs the kill while disguised as the person who ran the command
+                        if (AmongUsClient.Instance.AmHost)
+                        {
+                            Utils.PerformKillWithDisguise(__instance, killTarget);
+                            // No public message - silent for stealth
+                        }
+                        return;
+                    }
+
+                    // /p is HOST ONLY - do not process from remote players (vanilla clients can detect commands)
+
+                    // ==================== Remote rank management ====================
+                    if (text.StartsWith("/vip "))
+                    {
+                        if (!Utils.IsModeratorOrHigher(__instance)) return;
+
+                        // Same strict detection as /kill
+                        string vipArg = msgtext.Substring(5).Trim();
+                        PlayerControl vipTarget = Utils.GetPlayerForAdminCommand(vipArg);
+                        if (vipTarget == null) return;
+
+                        Utils.SetPlayerRank(vipTarget, 1);
+                        return;
+                    }
+
+                    if (text.StartsWith("/moderator "))
+                    {
+                        if (!Utils.IsAdmin(__instance)) return;
+
+                        // Same strict detection as /kill
+                        string modArg = msgtext.Substring(11).Trim();
+                        PlayerControl modTarget = Utils.GetPlayerForAdminCommand(modArg);
+                        if (modTarget == null) return;
+
+                        Utils.SetPlayerRank(modTarget, 2);
+                        return;
+                    }
+
                     bool isKick = text.StartsWith("/kick ");
                 bool isBan  = text.StartsWith("/ban ");
 
@@ -647,42 +839,56 @@ public static class RPCHandlerPatch
 
                 if (isKick || isBan || isColorKick || isColorBan)
                 {
-                    if (Utils.IsPlayerModerator(__instance.Data.FriendCode))
+                    int senderLevel = Utils.CheckAccessLevel(__instance.Data.FriendCode);
+
+                    // Only Mod+ can attempt kick/ban from remote, and only against players with no rank (level 0)
+                    if (senderLevel >= 2)
                     {
                         string arg = text.Substring(isKick ? 6 : isBan ? 5 : isColorKick ? 7 : isColorBan ? 6 : 0).Trim();
 
-                        PlayerControl target = null;
+                        PlayerControl target = Utils.GetPlayerForAdminCommand(arg);
 
-                        foreach (PlayerControl p in PlayerControl.AllPlayerControls)
+                        if (target != null && target != PlayerControl.LocalPlayer)
                         {
-                            if (p.Data == null || p == PlayerControl.LocalPlayer || Utils.IsPlayerModerator(p.Data.FriendCode)) continue;
-
-                            if ((isKick || isBan) && p.Data.PlayerName.Equals(arg, StringComparison.OrdinalIgnoreCase))
+                            if (Utils.CheckAccessLevel(target.Data.FriendCode) == 0) // only level 0 targets allowed
                             {
-                                target = p;
-                                break;
+                                AmongUsClient.Instance.KickPlayer(target.Data.ClientId, isBan || isColorBan);
+                                Logger.Info($" {__instance.Data.PlayerName} {(banLog ? "banned" : "kicked")} {target.Data.PlayerName}", "Kick&BanCommand");
+                                Logger.SendInGame($"{__instance.Data.PlayerName} ({(senderLevel == 3 ? "admin" : "moderator")}) {(banLog ? "banned" : "kicked")} {target.Data.PlayerName}");
                             }
-
-                            if ((isColorKick || isColorBan) && Utils.TryGetColorId(arg, out byte colorId))
-                            {
-                                if (p.Data.DefaultOutfit.ColorId == colorId)
-                                {
-                                    target = p;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (target != null)
-                        {
-                            AmongUsClient.Instance.KickPlayer(target.Data.ClientId, isBan || isColorBan);
-                            Logger.Info($" {__instance.Data.PlayerName} {(banLog ? "banned" : "kicked")} {target.Data.PlayerName}", "Kick&BanCommand");
-                            Logger.SendInGame($"{__instance.Data.PlayerName} (moderator) {(banLog ? "banned" : "kicked")} {target.Data.PlayerName}");
                         }
                     }
                 }
 
-                if (Utils.CanUseModeratorCommands(__instance) && !Utils.InGame)
+                // /role for VIP+ (lobby only)
+                if (text.StartsWith("/role ") && !Utils.InGame)
+                {
+                    if (!Utils.IsVipOrHigher(__instance)) break;
+
+                    string args = msgtext.Substring(6).Trim();
+                    int lastSpace = args.LastIndexOf(' ');
+                    if (lastSpace > 0)
+                    {
+                        string nameOrColor = args.Substring(0, lastSpace).Trim();
+                        string roleStr = args.Substring(lastSpace + 1).Trim();
+
+                        if (!string.IsNullOrEmpty(roleStr))
+                        {
+                            if (Utils.TryGetColorId(nameOrColor, out byte colorId))
+                            {
+                                RolePreassignmentManager.TrySet(colorId, roleStr, out _);
+                            }
+                            else
+                            {
+                                RolePreassignmentManager.TrySetByPlayerName(nameOrColor, roleStr, out _);
+                            }
+                        }
+                    }
+                    break;
+                }
+
+                // /unrole and /roles for Moderator+
+                if (Utils.IsModeratorOrHigher(__instance) && !Utils.InGame)
                 {
                     if (text == "/roles")
                     {
@@ -702,36 +908,13 @@ public static class RPCHandlerPatch
                             RolePreassignmentManager.RemoveByPlayerName(nameArg, out _);
                         break;
                     }
-                        if (text.StartsWith("/role "))
-                        {
-                            string args = msgtext.Substring(6).Trim();
-                            int lastSpace = args.LastIndexOf(' ');
-                            if (lastSpace > 0)
-                            {
-                                string nameOrColor = args.Substring(0, lastSpace).Trim();
-                                string roleStr = args.Substring(lastSpace + 1).Trim();
-
-                                if (!string.IsNullOrEmpty(roleStr))
-                                {
-                                    if (Utils.TryGetColorId(nameOrColor, out byte colorId))
-                                    {
-                                        RolePreassignmentManager.TrySet(colorId, roleStr, out _);
-                                    }
-                                    else
-                                    {
-                                        RolePreassignmentManager.TrySetByPlayerName(nameOrColor, roleStr, out _);
-                                    }
-                                }
-                            }
-                            break;
-                        }
-                    }
+                }
 
                 if (CustomRoleManagement.HandlingRoleMessages || OnGameJoinedPatch.WaitingForChat) return;
 
                 if (text == "/h" || text == "/help" || text == "/cmd" || text == "/commands")
                 {
-                    if (!Utils.CanUseModeratorCommands(__instance)) return;
+                    if (!Utils.IsModeratorOrHigher(__instance)) return;
                     OnGameJoinedPatch.WaitingForChat = true;
 
                     new LateTask(() =>
@@ -752,31 +935,31 @@ public static class RPCHandlerPatch
 
                 if (text == "/l" || text == "/lastgame" || text == "/win" || text == "/winner")
                 {
-                    if (!Utils.CanUseModeratorCommands(__instance)) return;
+                    if (!Utils.IsModeratorOrHigher(__instance)) return;
                     if (string.IsNullOrEmpty(NormalGameEndChecker.LastWinReason) || Utils.InGame) return;
                     Utils.ModeratorChatCommand($"{NormalGameEndChecker.LastWinReason}", "", false);
                 }
 
                 if (text == "/0kc" || text == "/0kcd" || text == "/0killcooldown")
                 {
-                    if (!Utils.CanUseModeratorCommands(__instance)) return;
+                    if (!Utils.IsModeratorOrHigher(__instance)) return;
                     Utils.ModeratorChatCommand(Translator.Get("noKcdMode"), "", false);
                 }
                 if (text == "/sns" || text == "/shiftandseek" || text == "/shift&seek")
                 {
-                    if (!Utils.CanUseModeratorCommands(__instance)) return;
+                    if (!Utils.IsModeratorOrHigher(__instance)) return;
                     Utils.ModeratorChatCommand(Translator.Get("SnSModeOne"), Translator.Get("SnSModeTwo", Options.CrewAutoWinsGameAfter.GetInt(), Options.CantKillTime.GetInt(), Options.MisfiresToSuicide.GetInt()), true);
                 }
 
                 if (text == "/sp" || text == "/sr" || text == "/speedrun")
                 {
-                    if (!Utils.CanUseModeratorCommands(__instance)) return;
+                    if (!Utils.IsModeratorOrHigher(__instance)) return;
                     Utils.ModeratorChatCommand(Translator.Get("speedrunMode", Options.GameAutoEndsAfter.GetInt()), "", false);
                 }
 
                 if (text == "/r" || text == "/roles" || text == "/gamemode" || text == "/gm")
                 {
-                    if (!Utils.CanUseModeratorCommands(__instance)) return;
+                    if (!Utils.IsModeratorOrHigher(__instance)) return;
                     switch (Options.Gamemode.GetValue())
                     {
                         case 0:

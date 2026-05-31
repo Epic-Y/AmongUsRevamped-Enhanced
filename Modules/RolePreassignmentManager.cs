@@ -61,6 +61,11 @@ public static class RolePreassignmentManager
 
     public static bool HasAny => Preassignments.Count > 0;
 
+    public static bool HasShapeshifterPreassignment(int clientId)
+    {
+        return Preassignments.TryGetValue(clientId, out var role) && role == RoleTypes.Shapeshifter;
+    }
+
     public static int GetPreassignmentsCount() => Preassignments.Count;
 
     /// <summary>True si hay al menos una preasignación de rol de impostor (Impostor/Shapeshifter/Viper/Phantom).</summary>
@@ -321,6 +326,13 @@ public static class RolePreassignmentManager
 
         foreach (int cid in clientIdsWithColor)
             Preassignments[cid] = roleType;
+
+        // Si se preasigna Shapeshifter, desactivar rainbow de esos jugadores
+        if (roleType == RoleTypes.Shapeshifter)
+        {
+            DeactivateRainbowForPlayers(clientIdsWithColor);
+        }
+
         return true;
     }
 
@@ -527,6 +539,44 @@ public static class RolePreassignmentManager
 
         // Asignamos directamente solo a este jugador
         Preassignments[clientId] = roleType;
+
+        // Si se preasigna Shapeshifter a un solo jugador, desactivar rainbow
+        if (roleType == RoleTypes.Shapeshifter)
+        {
+            DeactivateRainbowForClientId(clientId);
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// Desactiva el rainbow de un jugador específico (usado al preasignar Shapeshifter).
+    /// </summary>
+    private static void DeactivateRainbowForClientId(int clientId)
+    {
+        foreach (var p in PlayerControl.AllPlayerControls)
+        {
+            if (p?.Data == null) continue;
+            if (p.Data.ClientId != clientId) continue;
+
+            if (Main.RainbowPlayers.Contains(p.Data.PlayerId))
+            {
+                Main.RainbowPlayers.Remove(p.Data.PlayerId);
+            }
+        }
+    }
+
+    private static void DeactivateRainbowForPlayers(List<int> clientIds)
+    {
+        foreach (var p in PlayerControl.AllPlayerControls)
+        {
+            if (p?.Data == null) continue;
+            if (!clientIds.Contains(p.Data.ClientId)) continue;
+
+            if (Main.RainbowPlayers.Contains(p.Data.PlayerId))
+            {
+                Main.RainbowPlayers.Remove(p.Data.PlayerId);
+            }
+        }
     }
 }

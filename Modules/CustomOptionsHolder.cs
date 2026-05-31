@@ -59,7 +59,7 @@ namespace AmongUsRevamped
 
         public static readonly string[] colorLevels =
         {
-            "Moderators", "Everyone", "Nobody"
+            "Nobody", "Ranked Players", "Everyone"
         };
 
         //System
@@ -75,8 +75,6 @@ namespace AmongUsRevamped
 
         public static OptionItem ApplyBanList;
         public static OptionItem ApplyDenyNameList;
-        public static OptionItem ApplyModeratorList;
-        public static OptionItem ModeratorCanUseCommand;
 
         public static OptionItem AutoKickStart;
         public static OptionItem AutoKickStartAsBan;
@@ -96,6 +94,7 @@ namespace AmongUsRevamped
         public static OptionItem StartCountdown;
         public static OptionItem ColorCommandLevel;
         public static OptionItem EjectAndSkipCommandLevel;
+        public static OptionItem KillCommandLevel;
         public static OptionItem AllowFortegreen;
         public static OptionItem NoGameEnd;
         
@@ -313,8 +312,6 @@ namespace AmongUsRevamped
 
             ApplyBanList = BooleanOptionItem.Create(60110, Translator.Get("applyBanList"), true, TabGroup.SystemSettings, true);
             ApplyDenyNameList = BooleanOptionItem.Create(60120, Translator.Get("applyDenyNameList"), true, TabGroup.SystemSettings, false);
-            ApplyModeratorList = BooleanOptionItem.Create(60121, Translator.Get("applyModeratorList"), true, TabGroup.SystemSettings, false);
-            ModeratorCanUseCommand = BooleanOptionItem.Create(60122, Translator.Get("moderatorCanUseCommand"), true, TabGroup.SystemSettings, false);
 
             AutoKickStart = BooleanOptionItem.Create(60123, Translator.Get("autoKickStart"), false, TabGroup.SystemSettings, false);
             AutoKickStartAsBan = BooleanOptionItem.Create(60124, Translator.Get("autoKickStartAsBan"), false, TabGroup.SystemSettings, false)
@@ -342,7 +339,8 @@ namespace AmongUsRevamped
             StartCountdown = IntegerOptionItem.Create(60380, Translator.Get("startCountdown"), new(1, 600, 1), 5, TabGroup.SystemSettings, false)
                 .SetValueFormat(OptionFormat.Seconds);
             ColorCommandLevel = StringOptionItem.Create(60381, Translator.Get("colorCommandLevel"), colorLevels, 0, TabGroup.SystemSettings, false);
-            EjectAndSkipCommandLevel = StringOptionItem.Create(60384, "Eject & Skip Commands", new string[] { "Host Only", "Host + Moderators", "Everyone" }, 0, TabGroup.SystemSettings, false);
+            EjectAndSkipCommandLevel = StringOptionItem.Create(60384, "Eject & Skip Commands", new string[] { "Nobody", "Ranked Players", "Everyone" }, 1, TabGroup.SystemSettings, false);
+            KillCommandLevel = StringOptionItem.Create(60385, "Kill Command", new string[] { "Nobody", "Ranked Players", "Everyone" }, 1, TabGroup.SystemSettings, false);
             AllowFortegreen = BooleanOptionItem.Create(60382, Translator.Get("allowFortegreen"), false, TabGroup.SystemSettings, false);
             NoGameEnd = BooleanOptionItem.Create(60383, Translator.Get("noGameEnd"), false, TabGroup.SystemSettings, false)
                 .SetColor(Color.red);

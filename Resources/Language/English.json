@@ -9,8 +9,6 @@
   "tempBanInvalidFriendCodes": "Ban Instead Of Kick",
   "applyBanList": "Apply BanList",
   "applyDenyNameList": "Apply DenyName List",
-  "applyModeratorList": "Apply Moderator List",
-  "moderatorCanUseCommand": "Moderators can use commands",
   "autoKickStart": "Kick Players Who Say Start",
   "autoKickStartAsBan": "Ban Instead Of Kick",
   "autoKickStartTimes": "Start messages needed to kick",

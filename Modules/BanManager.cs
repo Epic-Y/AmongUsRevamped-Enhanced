@@ -24,7 +24,9 @@ public static class BanManager
     public static string RemoveHtmlTags(this string str) => Regex.Replace(str, "<[^>]*?>", "");
     private static readonly string DenyNameListPath = $"{DataPath}/AUR-DATA/DenyNameList.txt";
     private static string BanListPath = $"{DataPath}/AUR-DATA/BanList.txt";
-    private static string ModeratorListPath = $"{DataPath}/AUR-DATA/ModeratorList.txt";
+    private static string ModeratorListPath = $"{DataPath}/AUR-DATA/Moderator.txt";
+    private static string AdminListPath = $"{DataPath}/AUR-DATA/Admin.txt";
+    private static string VipListPath = $"{DataPath}/AUR-DATA/VIP.txt";
     public static List<string> TempBanWhiteList = [];
     public static void Init()
     {
@@ -44,8 +46,18 @@ public static class BanManager
             }
             if (!File.Exists(ModeratorListPath))
             {
-                Logger.Warn("Creating a new ModeratorList.txt file", "BanManager");
+                Logger.Warn("Creating a new Moderator.txt file", "BanManager");
                 File.Create(ModeratorListPath).Close();
+            }
+            if (!File.Exists(AdminListPath))
+            {
+                Logger.Warn("Creating a new Admin.txt file", "BanManager");
+                File.Create(AdminListPath).Close();
+            }
+            if (!File.Exists(VipListPath))
+            {
+                Logger.Warn("Creating a new VIP.txt file", "BanManager");
+                File.Create(VipListPath).Close();
             }
 
         }
@@ -168,17 +180,22 @@ public static class BanManager
         else return false;
     }
 
-    /// <summary>Exact match: returns true if friendCode is in ModeratorList.txt (line trim equals).</summary>
+    /// <summary>Exact match: returns true if friendCode is in Moderator.txt (or legacy ModeratorList.txt).</summary>
     public static bool IsInModeratorList(string friendCode)
     {
         if (string.IsNullOrWhiteSpace(friendCode)) return false;
         try
         {
-            if (!File.Exists(ModeratorListPath)) return false;
-            foreach (string line in File.ReadAllLines(ModeratorListPath))
+            // Support both new Moderator.txt and legacy ModeratorList.txt
+            string[] paths = { ModeratorListPath, $"{DataPath}/AUR-DATA/ModeratorList.txt" };
+            foreach (var path in paths)
             {
-                if (line.Trim().Equals(friendCode.Trim(), StringComparison.OrdinalIgnoreCase))
-                    return true;
+                if (!File.Exists(path)) continue;
+                foreach (string line in File.ReadAllLines(path))
+                {
+                    if (line.Trim().Equals(friendCode.Trim(), StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
             }
         }
         catch (Exception ex)
@@ -226,6 +243,100 @@ public static class BanManager
             Logger.Exception(ex, "RemoveModerator");
             return false;
         }
+    }
+
+    /// <summary>Exact match for Admin list (Admin.txt).</summary>
+    public static bool IsInAdminList(string friendCode)
+    {
+        if (string.IsNullOrWhiteSpace(friendCode)) return false;
+        try
+        {
+            if (!File.Exists(AdminListPath)) return false;
+            foreach (string line in File.ReadAllLines(AdminListPath))
+            {
+                if (line.Trim().Equals(friendCode.Trim(), StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+        catch (Exception ex) { Logger.Exception(ex, "IsInAdminList"); }
+        return false;
+    }
+
+    public static bool AddAdmin(string friendCode)
+    {
+        if (string.IsNullOrWhiteSpace(friendCode) || !AmongUsClient.Instance.AmHost) return false;
+        try
+        {
+            if (!Directory.Exists($"{DataPath}/AUR-DATA")) Directory.CreateDirectory($"{DataPath}/AUR-DATA");
+            if (!File.Exists(AdminListPath)) File.Create(AdminListPath).Close();
+            if (IsInAdminList(friendCode)) return false;
+            File.AppendAllText(AdminListPath, friendCode.Trim() + Environment.NewLine);
+            return true;
+        }
+        catch (Exception ex) { Logger.Exception(ex, "AddAdmin"); return false; }
+    }
+
+    public static bool RemoveAdmin(string friendCode)
+    {
+        if (string.IsNullOrWhiteSpace(friendCode) || !AmongUsClient.Instance.AmHost) return false;
+        try
+        {
+            if (!File.Exists(AdminListPath)) return false;
+            var lines = File.ReadAllLines(AdminListPath).ToList();
+            string trimmed = friendCode.Trim();
+            int removed = lines.RemoveAll(l => l.Trim().Equals(trimmed, StringComparison.OrdinalIgnoreCase));
+            if (removed == 0) return false;
+            File.WriteAllLines(AdminListPath, lines);
+            return true;
+        }
+        catch (Exception ex) { Logger.Exception(ex, "RemoveAdmin"); return false; }
+    }
+
+    /// <summary>Exact match for VIP list (VIP.txt).</summary>
+    public static bool IsInVipList(string friendCode)
+    {
+        if (string.IsNullOrWhiteSpace(friendCode)) return false;
+        try
+        {
+            if (!File.Exists(VipListPath)) return false;
+            foreach (string line in File.ReadAllLines(VipListPath))
+            {
+                if (line.Trim().Equals(friendCode.Trim(), StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+        }
+        catch (Exception ex) { Logger.Exception(ex, "IsInVipList"); }
+        return false;
+    }
+
+    public static bool AddVip(string friendCode)
+    {
+        if (string.IsNullOrWhiteSpace(friendCode) || !AmongUsClient.Instance.AmHost) return false;
+        try
+        {
+            if (!Directory.Exists($"{DataPath}/AUR-DATA")) Directory.CreateDirectory($"{DataPath}/AUR-DATA");
+            if (!File.Exists(VipListPath)) File.Create(VipListPath).Close();
+            if (IsInVipList(friendCode)) return false;
+            File.AppendAllText(VipListPath, friendCode.Trim() + Environment.NewLine);
+            return true;
+        }
+        catch (Exception ex) { Logger.Exception(ex, "AddVip"); return false; }
+    }
+
+    public static bool RemoveVip(string friendCode)
+    {
+        if (string.IsNullOrWhiteSpace(friendCode) || !AmongUsClient.Instance.AmHost) return false;
+        try
+        {
+            if (!File.Exists(VipListPath)) return false;
+            var lines = File.ReadAllLines(VipListPath).ToList();
+            string trimmed = friendCode.Trim();
+            int removed = lines.RemoveAll(l => l.Trim().Equals(trimmed, StringComparison.OrdinalIgnoreCase));
+            if (removed == 0) return false;
+            File.WriteAllLines(VipListPath, lines);
+            return true;
+        }
+        catch (Exception ex) { Logger.Exception(ex, "RemoveVip"); return false; }
     }
 
 }

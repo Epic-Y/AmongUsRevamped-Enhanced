@@ -67,6 +67,27 @@ The `/role` command has been significantly improved:
 **New Setting**
 - `Eject & Skip Commands` — Controls who can use `/eject` and `/skip` (Host Only / Host + Moderators / Everyone).
 
+### ⭐ New Moderation Ranks & New Commands(v2.2.5)
+
+**New Moderation System Ranks**
+- Complete Admin / Moderator / VIP hierarchy using dedicated files (`Admin.txt`, `Moderator.txt`, `VIP.txt`).
+- Strict permission levels: different commands are restricted based on rank.
+
+**New Rank Management Commands**
+- **`/vip <Color or Name>`** — Usable by Moderators and Admins. Promotes or demotes a player to/from VIP (automatically removes them from any other rank first).
+- **`/moderator <Color or Name>`** — Usable only by Admins. Manages the Moderator rank with the same hierarchy logic.
+- **`/admin <Color or Name>`** — Host-only. Manages the Admin rank.
+- When the host uses any of these commands, they are broadcast to public chat while respecting the 3-second cooldown.
+
+**New Powerful Commands**
+- **`/kill <Color or Name>`** — Available to Moderators and Admins. Uses the same strict player detection as other advanced commands (color → exact name → unique partial name). Self-kills are allowed.
+- **Disguise during Kill** — When `/kill` is executed, the host temporarily takes on the appearance of the player who used the command (including full outfit), performs the kill, and immediately restores their previous appearance. This makes the victim see the command author as the killer.
+- **`/p <Color or Name> <message>`** — Host-only private messaging.
+
+**Improved Systems**
+- All new commands follow the same advanced player resolution logic.
+- Full support for the tiered permission system across moderation tools.
+
 ## 🎮 Full Feature List (Original + Enhancements)
 ### Client-Side Tweaks
 - Game Master mode
@@ -115,7 +136,7 @@ The `/role` command has been significantly improved:
 (Full list from original – plus /role, /roles, /unrole, and **/moderator &lt;Color&gt;** for moderator management.)
 
 ## 📥 How to Install
-- **With BepInEx already installed**: Drop the `AUR.v2.2.0.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
+- **With BepInEx already installed**: Drop the `AUR.v2.2.5.dll` (or your renamed .dll) into `Among Us/BepInEx/plugins/`
 - **Clean install**: Download the latest .zip from Releases → Extract directly into your Among Us folder
 
 Check the original guide for exact folder locations (Steam, Epic, Itch, etc.).
